@@ -8,10 +8,12 @@ class Config(object):
     }
     
     SOCIAL_FACEBOOK = {
-        'consumer_key': 'facebook app id',
-        'consumer_secret': 'facebook app secret',
-        'request_token_params': {
-            'scope': 'email'
+        'oauth': {
+            'consumer_key': 'facebook app id',
+            'consumer_secret': 'facebook app secret',
+            'request_token_params': {
+                'scope': 'email'
+            }
         }
     }
     
