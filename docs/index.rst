@@ -209,8 +209,8 @@ Configuration Values
 * :attr:`SOCIAL_FLASH_MESSAGES`: Specifies wether or not to flash messages 
   during connection and login requests
 
-.. _api:
 
+.. _api:
 
 API
 ===
@@ -224,10 +224,13 @@ Exceptions
 
 .. autoexception:: flask_social.ConnectionNotFoundError
 
+
+.. _signals:
+
 Signals
 -------
 
-See the `Flask documentation on signals`_ for information on how to use these
+See the Flask documentation on signals for information on how to use these
 signals in your code.
 
 .. data:: social_connection_created
@@ -243,6 +246,7 @@ signals in your code.
    (which is the sender), it is passed `provider_id` which is the service 
    provider ID, and `oauth_response` which is the response returned by the
    provider
+
 
 Changelog
 =========
