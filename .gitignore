@@ -4,3 +4,4 @@
 .project
 .pydevproject
 .settings
+example/config.py

@@ -28,6 +28,7 @@ APP_URL_KEY =                'SOCIAL_APP_URL'
 CONNECTION_DATASTORE_KEY =   'SOCIAL_CONNECTION_DATASTORE'
 CONNECT_ALLOW_REDIRECT_KEY = 'SOCIAL_CONNECT_ALLOW_REDIRECT'
 CONNECT_DENY_REDIRECT_KEY =  'SOCIAL_CONNECT_DENY_REDIRECT'
+FLASH_MESSAGES_KEY =         'SOCIAL_FLASH_MESSAGES'
 
 POST_OAUTH_CONNECT_SESSION_KEY = 'post_oauth_connect_url'
 POST_OAUTH_LOGIN_SESSION_KEY = 'post_oauth_login_url' 
@@ -41,6 +42,7 @@ default_config = {
     CONNECTION_DATASTORE_KEY:   'connection_datastore',
     CONNECT_ALLOW_REDIRECT_KEY: '/profile',
     CONNECT_DENY_REDIRECT_KEY:  '/profile',
+    FLASH_MESSAGES_KEY:         True
 }
 
 default_provider_config = {
@@ -174,14 +176,14 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
         else: 
             current_app.logger.info('Inactive local user attempted '
                                     'login via %s.' % display_name)
-            flash("Inactive user", "error")
+            do_flash("Inactive user", "error")
         
     except ConnectionNotFoundError:
         current_app.logger.info('Login attempt via %s failed because '
                                 'connection was not found.' % display_name)
         
         msg = '%s account not associated with an existing user' % display_name
-        flash(msg, 'error')
+        do_flash(msg, 'error')
         
     except Exception, e:
         current_app.logger.error('Unexpected error signing in '
@@ -210,20 +212,20 @@ def _connect_handler(connection_values, provider_id):
                                        user=current_user, 
                                        connection=connection)
         
-        flash("Connection established to %s" % display_name, 'success')
+        do_flash("Connection established to %s" % display_name, 'success')
         
     except ConnectionExistsError, e:
         current_app.logger.debug('Connection to %s exists already '
                                  'for %s' % (display_name, current_user))
         
-        flash("A connection is already established with %s "
+        do_flash("A connection is already established with %s "
               "to your account" % display_name, 'notice')
         
     except Exception, e:
         current_app.logger.error('Unexpected error connecting %s account for ' 
                                  'user. Reason: %s' % (display_name, e))
         
-        flash("Could not make connection to %s. "
+        do_flash("Could not make connection to %s. "
               "Please try again later." % display_name, 'error')
     
     redirect_url = session.pop(POST_OAUTH_CONNECT_SESSION_KEY, 
@@ -350,7 +352,7 @@ class LoginHandler(OAuthHandler):
                                  '%s. %s' % (display_name, response))
         
         if response is None:
-            flash("Access was denied to your % account" % display_name, 'error')
+            do_flash("Access was denied to your % account" % display_name, 'error')
             return redirect(login_manager.login_view)
         
         return _login_handler(self.provider_id, 
@@ -407,7 +409,7 @@ class ConnectHandler(OAuthHandler):
                                  '%s. %s' % (display_name, response))
         
         if response is None:
-            flash("Access was denied by %s" % display_name, 'error')
+            do_flash("Access was denied by %s" % display_name, 'error')
             return redirect(current_app.config[CONNECT_DENY_REDIRECT_KEY])
         
         return _connect_handler(self.get_connection_values(response), 
@@ -687,13 +689,13 @@ class Social(object):
                 current_app.logger.debug('Removed all connections to '
                                          '%(provider)s for %(user)s' % ctx)
                 
-                flash("All connections to %s removed" % display_name, 'info')
+                do_flash("All connections to %s removed" % display_name, 'info')
             except: 
                 current_app.logger.error('Unable to remove all connections to '
                                          '%(provider)s for %(user)s' % ctx)
                 
                 msg = "Unable to remove connection to %(provider)s" % ctx
-                flash(msg, 'error')
+                do_flash(msg, 'error')
                 
             return redirect(request.referrer)
             
@@ -716,13 +718,13 @@ class Social(object):
                 current_app.logger.debug('Removed connection to %(provider)s '
                     'account %(provider_user_id)s for %(user)s' % ctx)
                 
-                flash("Connection to %(provider)s removed" % ctx, 'info')
+                do_flash("Connection to %(provider)s removed" % ctx, 'info')
             except ConnectionNotFoundError:
                 current_app.logger.error(
                     'Unable to remove connection to %(provider)s account '
                     '%(provider_user_id)s for %(user)s' % ctx)
                 
-                flash("Unabled to remove connection to %(provider)s" % ctx,
+                do_flash("Unabled to remove connection to %(provider)s" % ctx,
                       'error')
                 
             return redirect(request.referrer)
@@ -737,6 +739,10 @@ class Social(object):
         url_prefix = app.config[URL_PREFIX_KEY]
         app.register_blueprint(blueprint, url_prefix=url_prefix)
         
+
+def do_flash(message, category):
+    if current_app.config[FLASH_MESSAGES_KEY]:
+        flash(message, category)
         
 # Signals
 social_connection_created = _signals.signal("connection-created")
