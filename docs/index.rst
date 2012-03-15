@@ -51,11 +51,11 @@ Then install your datastore requirement.
     
 Then install your provider API libraries.
 
-**Facebook**
+**Facebook**::
 
     $ pip install http://github.com/pythonforfacebook/facebook-sdk/tarball/master
     
-**Twitter**
+**Twitter**::
 
     $ pip install python-twitter
 
