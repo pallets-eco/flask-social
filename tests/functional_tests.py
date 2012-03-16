@@ -5,6 +5,7 @@ from flask.ext.testing import Twill, twill
 class SocialTest(unittest.TestCase):
     
     SOCIAL_CONFIG = None
+    APP_TYPE = None
     
     def setUp(self):
         super(SocialTest, self).setUp()
@@ -16,7 +17,15 @@ class SocialTest(unittest.TestCase):
         self.client = self.app.test_client()
         
     def _create_app(self, auth_config):
-        return app.create_sqlalchemy_app(auth_config)
+        app_type = self.APP_TYPE or 'sql'
+        
+        if app_type == 'sql':
+            fn = app.create_sqlalchemy_app
+        
+        if app_type == 'mongo':
+            fn = app.create_mongoengine_app
+        
+        return fn(auth_config)
     
   
 class TwitterSocialTests(SocialTest):
@@ -90,3 +99,6 @@ class TwitterSocialTests(SocialTest):
             self._login_provider(t, 'twitter')
             self._authorize_twitter(t)
             assert 'Profile Page' in t.browser.get_html()
+            
+class MongoEngineTwitterSocialTests(TwitterSocialTests):
+    APP_TYPE = 'mongo'

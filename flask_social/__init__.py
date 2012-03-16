@@ -162,7 +162,7 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
     try:
         method = connection_datastore.get_connection_by_provider_user_id
         connection = method(provider_id, provider_user_id)
-        user = user_datastore.with_id(getattr(connection, 'user_id'))
+        user = user_datastore.with_id(connection.user_id)
         
         if login_user(user):
             redirect_url = session.pop(POST_OAUTH_LOGIN_SESSION_KEY, 
@@ -184,11 +184,12 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
         
         msg = '%s account not associated with an existing user' % display_name
         do_flash(msg, 'error')
-        
+    
+    """    
     except Exception, e:
         current_app.logger.error('Unexpected error signing in '
                                  'via %s: %s' % (display_name, e))
-        
+    """    
     social_login_failed.send(current_app._get_current_object(), 
                              provider_id=provider_id, 
                              oauth_response=oauth_response)
@@ -281,7 +282,7 @@ class ConnectionFactory(object):
             for key in ('user_id', 'provider_id', 'provider_user_id',
                         'access_token', 'secret', 'display_name', 
                         'profile_url', 'image_url'):
-                rv[key] = model.__dict__[key]
+                rv[key] = getattr(model, key)
             return rv
         
         return Connection(api=self._create_api(connection), 
@@ -440,7 +441,7 @@ class TwitterConnectHandler(ConnectHandler):
         return dict(
             user_id = current_user.get_id(),
             provider_id = self.provider_id,
-            provider_user_id = user.id,
+            provider_user_id = str(user.id),
             access_token = response['oauth_token'],
             secret = response['oauth_token_secret'],
             display_name = '@%s' % user.screen_name,

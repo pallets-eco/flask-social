@@ -37,17 +37,17 @@ class MongoEngineConnectionDatastore(ConnectionDatastore):
                 user_id=user_id, 
                 provider_id=provider_id))
     
-    def get_connection_by_provider_user_id(self, provider_id, provider_user_id):
+    def _get_connection_by_provider_user_id(self, provider_id, provider_user_id):
         return social.SocialConnection.objects(
             provider_id=provider_id, 
             provider_user_id=provider_user_id).first()
             
-    def get_primary_connection(self, user_id, provider_id):
+    def _get_primary_connection(self, user_id, provider_id):
         return social.SocialConnection.objects(
             user_id=user_id, 
             provider_id=provider_id).order_by('+rank').first()
         
-    def get_connection(self, user_id, provider_id, provider_user_id):
+    def _get_connection(self, user_id, provider_id, provider_user_id):
         return social.SocialConnection.objects(
             user_id=user_id, 
             provider_id=provider_id, 
