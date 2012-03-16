@@ -7,15 +7,18 @@ sys.path.insert(0, os.getcwd())
 
 from flask import Flask, render_template, current_app, redirect
 
+from flask.ext.mongoengine import MongoEngine
 from flask.ext.sqlalchemy import SQLAlchemy
 
 from flask.ext.security import (Security, LoginForm, user_datastore, 
                                 login_required, current_user)
 
+from flask.ext.security.datastore.mongoengine import MongoEngineUserDatastore
 from flask.ext.security.datastore.sqlalchemy import SQLAlchemyUserDatastore
 
 from flask.ext.social import Social
 from flask.ext.social.datastore.sqlalchemy import SQLAlchemyConnectionDatastore
+from flask.ext.social.datastore.mongoengine import MongoEngineConnectionDatastore
 
 from werkzeug import url_decode
 
@@ -93,6 +96,7 @@ def create_app(config):
     return app
 
 def create_sqlalchemy_app(config=None):
+    print 'create_sqlalchemy_app'
     app = create_app(config)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/flask_social_example.sqlite'
     
@@ -108,27 +112,30 @@ def create_sqlalchemy_app(config=None):
         
     return app
 
-"""
 def create_mongoengine_app(auth_config=None):
+    print 'create_mongoengine_app'
     app = create_app(auth_config)
-    app.config['MONGODB_DB'] = 'flask_security_example'
+    app.config['MONGODB_DB'] = 'flask_social_example'
     app.config['MONGODB_HOST'] = 'localhost'
     app.config['MONGODB_PORT'] = 27017
     
     db = MongoEngine(app)
     Security(app, MongoEngineUserDatastore(db))
+    Social(app, MongoEngineConnectionDatastore(db))
     
     @app.before_first_request
     def before_first_request():
+        print 'before_first_request'
         from flask.ext.security import User, Role
+        from flask.ext.social import SocialConnection
         User.drop_collection()
         Role.drop_collection()
+        SocialConnection.drop_collection()
         populate_data()
         
     return app
-"""
 
 if __name__ == '__main__':
-    app = create_sqlalchemy_app()
-    #app = create_mongoengine_app()
+    #app = create_sqlalchemy_app()
+    app = create_mongoengine_app()
     app.run()

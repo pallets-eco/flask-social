@@ -37,8 +37,8 @@ class SQLAlchemyConnectionDatastore(ConnectionDatastore):
     def remove_all_connections(self, user_id, provider_id):
         self._delete_model(
             social.SocialConnection.query.filter_by(
-            user_id=user_id, 
-            provider_id=provider_id))
+                user_id=user_id, 
+                provider_id=provider_id))
     
     def _get_connection_by_provider_user_id(self, provider_id, provider_user_id):
         return social.SocialConnection.query.filter_by(
