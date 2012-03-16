@@ -218,6 +218,75 @@ API
 .. autoclass:: flask_social.Social
     :members:
     
+Models
+------
+.. autoclass:: flask_social.Connection
+
+    .. attribute:: user_id
+    
+       Local user ID
+       
+    .. attribute:: provider_id
+    
+       Provider ID which is a lowercase string of the provider name
+       
+    .. attribute:: provider_user_id
+    
+       The provider's user ID
+       
+    .. attribute:: access_token
+    
+       The access token from the provider received upon authorization 
+       
+    .. attribute:: secret
+    
+       The secret from the provider received upon authorization
+       
+    .. attribute:: display_name
+    
+       The display name or username of the provider's user
+       
+    .. attribute:: profile_url
+    
+       The URL of the user's profile at the provider
+       
+    .. attribute:: image_url
+    
+       The URL of the user's profile image
+       
+Factories
+---------
+
+.. autoclass:: flask_social.ConnectionFactory
+    :members:
+    
+.. autoclass:: flask_social.FacebookConnectionFactory
+    :members:
+    
+.. autoclass:: flask_social.TwitterConnectionFactory
+    :members:
+    
+OAuth Handlers
+--------------
+
+.. autoclass:: flask_social.LoginHandler
+    :members:
+    
+.. autoclass:: flask_social.FacebookLoginHandler
+    :members:
+    
+.. autoclass:: flask_social.TwitterLoginHandler
+    :members:
+    
+.. autoclass:: flask_social.ConnectHandler
+    :members:
+    
+.. autoclass:: flask_social.FacebookConnectHandler
+    :members:
+    
+.. autoclass:: flask_social.TwitterConnectHandler
+    :members:
+    
 Exceptions
 ----------    
 .. autoexception:: flask_social.ConnectionExistsError

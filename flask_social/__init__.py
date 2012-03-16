@@ -121,44 +121,8 @@ class ConnectionExistsError(Exception):
     connection already exists
     """ 
 
-SocialConnection = None
+Connection = None
 
-class Connection(object):
-    """
-    A Connection represents a connection between a remote provider account with
-    a user account of the local application. It also contains a configured
-    instance of the provider's API with the connection values.
-    """
-    def __init__(self, user_id, provider_id, provider_user_id, 
-                 access_token, secret, display_name, 
-                 profile_url=None, image_url=None, api=None):
-        """Creates a Connection object 
-        
-        :param user_id: The user ID of a user of your application
-        :param provider_id: The provider ID of which to find a connection to
-        :param provider_user_id: The user ID associated with the user's account 
-                                 with the provider
-        :param access_token: The access token supplied by the provider after 
-                             the user has granted access to the application
-        :param secret: The secret token supplied by the provider after the user
-                       has granted access to the application. This is usually
-                       only supplied by providers who implement OAuth 1.0
-        :param display_name: The display name you wish to use locally to
-                             represent the provider account. Generally speaking
-                             this is set to the account's username.
-        :param profile_url: The optional URL to the account's profile
-        :param image_url: The optional URL of the account's profile image.
-        :param api: An instance of a configured API for the provider 
-        """
-        self.user_id = user_id
-        self.provider_id = provider_id
-        self.provider_user_id = provider_user_id
-        self.access_token = access_token
-        self.secret = secret
-        self.display_name = display_name
-        self.profile_url = profile_url
-        self.image_url = image_url
-        self.api = api
             
 
 def _login_handler(provider_id, provider_user_id, oauth_response):
@@ -297,8 +261,8 @@ class ConnectionFactory(object):
                 rv[key] = getattr(model, key)
             return rv
         
-        return Connection(api=self._create_api(connection), 
-                          **as_dict(connection))
+        return dict(api=self._create_api(connection), 
+                    **as_dict(connection))
     
     def __call__(self, **kwargs):
         try:
@@ -308,9 +272,9 @@ class ConnectionFactory(object):
 
 
 class FacebookConnectionFactory(ConnectionFactory):
-    """The `FacebookConnectionFactor` class creates `Connection` instances for
+    """The `FacebookConnectionFactory` class creates `Connection` instances for
     accounts connected to Facebook. The API instance for Facebook connections
-    are instances of the standard Facebook Python libary.
+    are instances of the `Facebook Python libary <https://github.com/pythonforfacebook/facebook-sdk>`_.
     """
     def __init__(self, **kwargs):
         super(FacebookConnectionFactory, self).__init__('facebook')
@@ -320,9 +284,9 @@ class FacebookConnectionFactory(ConnectionFactory):
 
 
 class TwitterConnectionFactory(ConnectionFactory):
-    """The `TwitterConnectionFactor` class creates `Connection` instances for
+    """The `TwitterConnectionFactory` class creates `Connection` instances for
     accounts connected to Twitter. The API instance for Twitter connections
-    are instance of the python-twitter Python library.
+    are instance of the `python-twitter library <http://code.google.com/p/python-twitter/>`_
     """
     def __init__(self, consumer_key, consumer_secret, **kwargs):
         super(TwitterConnectionFactory, self).__init__('twitter')
