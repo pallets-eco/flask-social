@@ -113,7 +113,6 @@ def create_sqlalchemy_app(config=None):
     return app
 
 def create_mongoengine_app(auth_config=None):
-    print 'create_mongoengine_app'
     app = create_app(auth_config)
     app.config['MONGODB_DB'] = 'flask_social_example'
     app.config['MONGODB_HOST'] = 'localhost'
@@ -125,7 +124,6 @@ def create_mongoengine_app(auth_config=None):
     
     @app.before_first_request
     def before_first_request():
-        print 'before_first_request'
         from flask.ext.security import User, Role
         from flask.ext.social import SocialConnection
         User.drop_collection()
@@ -136,6 +134,6 @@ def create_mongoengine_app(auth_config=None):
     return app
 
 if __name__ == '__main__':
-    #app = create_sqlalchemy_app()
-    app = create_mongoengine_app()
+    app = create_sqlalchemy_app()
+    #app = create_mongoengine_app()
     app.run()
