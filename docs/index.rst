@@ -37,7 +37,7 @@ Installation
 First, install Flask-Social::
 
     $ mkvirtualenv app-name
-    $ pip install https://github.com/mattupstate/flask-social/tarball/develop
+    $ pip install Flask-Social
     
 Then install your datastore requirement. 
 
