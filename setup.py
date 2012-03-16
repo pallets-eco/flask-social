@@ -15,7 +15,7 @@ from setuptools import setup
 
 setup(
     name='Flask-Social',
-    version='1.0.0-dev',
+    version='1.0.0',
     url='https://github.com/mattupstate/flask-social',
     license='MIT',
     author='Matthew Wright',
