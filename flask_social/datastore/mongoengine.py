@@ -1,8 +1,36 @@
+# -*- coding: utf-8 -*-
+"""
+    flask.ext.social.datastore.mongoengine
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This module contains a Flask-Social MongoEngine datastore implementation
+
+    :copyright: (c) 2012 by Matt Wright.
+    :license: MIT, see LICENSE for more details.
+"""
+
 from flask.ext import social
 from flask.ext.social.datastore import ConnectionDatastore
 
 class MongoEngineConnectionDatastore(ConnectionDatastore):
+    """A MongoEngine datastore implementation for Flask-Social. 
+    Example usage:: 
     
+        from flask import Flask
+        from flask.ext.mongoengine import MongoEngine
+        from flask.ext.social import Social
+        from flask.ext.social.datastore.mongoengine import MongoEngineConnectionDatastore
+        
+        app = Flask(__name__)
+        app.config['SECRET_KEY'] = 'secret'
+        app.config['MONGODB_DB'] = 'flask_social_example'
+        app.config['MONGODB_HOST'] = 'localhost'
+        app.config['MONGODB_PORT'] = 27017
+        
+        db = MongoEngine(app)
+        Social(app, MongoEngineConnectionDatastore(db))
+    """
+        
     def get_models(self):
         db = self.db
         
