@@ -1,7 +1,33 @@
+# -*- coding: utf-8 -*-
+"""
+    flask.ext.social.datastore.sqlalchemy
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This module contains a Flask-Social SQLAlchemy datastore implementation
+
+    :copyright: (c) 2012 by Matt Wright.
+    :license: MIT, see LICENSE for more details.
+"""
+
 from flask.ext import social
 from flask.ext.social.datastore import ConnectionDatastore
 
 class SQLAlchemyConnectionDatastore(ConnectionDatastore):
+    """A SQLAlchemy datastore implementation for Flask-Social. 
+    Example usage:: 
+    
+        from flask import Flask
+        from flask.ext.sqlalchemy import SQLAlchemy
+        from flask.ext.social import Social
+        from flask.ext.social.datastore.sqlalchemy import SQLAlchemyConnectionDatastore
+        
+        app = Flask(__name__)
+        app.config['SECRET_KEY'] = 'secret'
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/flask_social_example.sqlite'
+        
+        db = SQLAlchemy(app)
+        Social(app, SQLAlchemyConnectionDatastore(db))
+    """
     
     def get_models(self):
         db = self.db

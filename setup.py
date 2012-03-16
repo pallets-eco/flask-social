@@ -2,7 +2,7 @@
 Flask-Social
 --------------
 
-Oauth provider login and APIs for use with Flask-Security.
+Simple OAuth provider integration for Flask-Security.
 
 Links
 `````
@@ -15,12 +15,12 @@ from setuptools import setup
 
 setup(
     name='Flask-Social',
-    version='0.1.0-dev',
+    version='1.0.0-dev',
     url='https://github.com/mattupstate/flask-social',
     license='MIT',
     author='Matthew Wright',
     author_email='matt@nobien.net',
-    description='Simple oauth provider integration for Flask-Security',
+    description='Simple OAuth provider integration for Flask-Security',
     long_description=__doc__,
     packages=[
         'flask_social',
