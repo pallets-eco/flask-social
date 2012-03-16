@@ -1,8 +1,10 @@
 .DS_Store
 *.pyc
 *.egg
+*egg-info
 .project
 .pydevproject
 .settings
 example/config.py
+build
 _build
