@@ -126,8 +126,8 @@ Connection = None
             
 
 def _login_handler(provider_id, provider_user_id, oauth_response):
-    """Shared method to handle the signin process 
-    """
+    """Shared method to handle the signin process"""
+    
     if current_user.is_authenticated():
         return redirect("/")
     
@@ -160,12 +160,11 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
         
         msg = '%s account not associated with an existing user' % display_name
         do_flash(msg, 'error')
-    
-    """    
+     
     except Exception, e:
         current_app.logger.error('Unexpected error signing in '
                                  'via %s: %s' % (display_name, e))
-    """    
+        
     social_login_failed.send(current_app._get_current_object(), 
                              provider_id=provider_id, 
                              oauth_response=oauth_response)
@@ -641,7 +640,7 @@ class Social(object):
                        callback_url=callback_url)
             
             current_app.logger.debug('Starting process of connecting '
-                '%(display_name)s ccount to user account %(current_user)s. '
+                '%(display_name)s account to user account %(current_user)s. '
                 'Callback URL = %(callback_url)s' % ctx)
             
             allow_view = current_app.config[CONNECT_ALLOW_REDIRECT_KEY]
