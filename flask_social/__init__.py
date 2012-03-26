@@ -146,7 +146,10 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
             
             current_app.logger.debug('User logged in via %s. Redirecting to '
                                      '%s' % (display_name, redirect_url))
-                
+            
+            social_login_completed.send(current_app._get_current_object(), 
+                                        provider_id=provider_id, user=user)
+
             return redirect(redirect_url)
         
         else: 
@@ -185,7 +188,7 @@ def _connect_handler(connection_values, provider_id):
                                  'for %s' % (display_name, current_user))
         
         social_connection_created.send(current_app._get_current_object(), 
-                                       user=current_user, 
+                                       user=current_user._get_current_object(), 
                                        connection=connection)
         
         do_flash("Connection established to %s" % display_name, 'success')
@@ -201,6 +204,10 @@ def _connect_handler(connection_values, provider_id):
         current_app.logger.error('Unexpected error connecting %s account for ' 
                                  'user. Reason: %s' % (display_name, e))
         
+        social_connection_failed.send(current_app._get_current_object(), 
+                                      user=current_user._get_current_object(), 
+                                      error=e)
+
         do_flash("Could not make connection to %s. "
               "Please try again later." % display_name, 'error')
     
@@ -325,10 +332,12 @@ class LoginHandler(OAuthHandler):
         display_name = get_display_name(self.provider_id)
         
         current_app.logger.debug('Received login response from '
-                                 '%s. %s' % (display_name, response))
+                                 '%s: %s' % (display_name, response))
         
         if response is None:
-            do_flash("Access was denied to your % account" % display_name, 'error')
+            do_flash("Access was denied to your %s "
+                     "account" % display_name, 'error')
+
             return redirect(login_manager.login_view)
         
         return _login_handler(self.provider_id, 
@@ -659,9 +668,14 @@ class Social(object):
             ctx = dict(provider=display_name,  user=current_user)
             
             try:
-                method = connection_datastore.remove_all_connections
-                method(current_user.get_id(), provider_id)
+                connection_datastore \
+                    .remove_all_connections(current_user.get_id(), provider_id)
                 
+                social_connection_removed \
+                    .send(current_app._get_current_object(),
+                          user=current_user._get_current_object(),
+                          provider_id=provider_id)
+
                 current_app.logger.debug('Removed all connections to '
                                          '%(provider)s for %(user)s' % ctx)
                 
@@ -688,13 +702,21 @@ class Social(object):
                        provider_user_id = provider_user_id)
             
             try:
-                connection_datastore.remove_connection(current_user.get_id(), 
-                    provider_id, provider_user_id)
+                connection_datastore \
+                    .remove_connection(current_user.get_id(), 
+                                       provider_id, 
+                                       provider_user_id)
                 
+                social_connection_removed \
+                    .send(current_app._get_current_object(),
+                          user=current_user._get_current_object(),
+                          provider_id=provider_id)
+
                 current_app.logger.debug('Removed connection to %(provider)s '
                     'account %(provider_user_id)s for %(user)s' % ctx)
                 
                 do_flash("Connection to %(provider)s removed" % ctx, 'info')
+
             except ConnectionNotFoundError:
                 current_app.logger.error(
                     'Unable to remove connection to %(provider)s account '
@@ -707,10 +729,7 @@ class Social(object):
         
         # Configure the URL handlers for each fo the configured providers
         for provider_config in provider_configs:
-            _configure_provider(app, 
-                                blueprint, 
-                                app.oauth, 
-                                provider_config)
+            _configure_provider(app, blueprint, app.oauth, provider_config)
             
         url_prefix = app.config[URL_PREFIX_KEY]
         app.register_blueprint(blueprint, url_prefix=url_prefix)
@@ -722,4 +741,7 @@ def do_flash(message, category):
         
 # Signals
 social_connection_created = _signals.signal("connection-created")
+social_connection_failed = _signals.signal("connection-failed")
+social_connection_removed = _signals.signal("connection-removed")
 social_login_failed = _signals.signal("login-failed")
+social_login_completed = _signals.signal("login-success")
