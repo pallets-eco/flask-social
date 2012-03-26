@@ -175,13 +175,16 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
     return redirect(login_manager.login_view)
 
 
-def _connect_handler(connection_values, provider_id):
+def _connect_handler(connection_values, user_id=None):
     """Shared method to handle the connection process
     
     :param connection_values: A dictionary containing the connection values
     :param provider_id: The provider ID the connection shoudl be made to
     """
+    provider_id = connection_values['provider_id']
     display_name = get_display_name(provider_id)
+    connection_values['user_id'] =  user_id or current_user.get_id()
+
     try:
         connection = connection_datastore.save_connection(**connection_values)
         current_app.logger.debug('Connection to %s established '
@@ -387,7 +390,7 @@ class ConnectHandler(OAuthHandler):
         """
         raise NotImplementedError("get_connection_values")
     
-    def __call__(self, response):
+    def __call__(self, response, user_id=None):
         display_name = get_display_name(self.provider_id)
         
         current_app.logger.debug('Received connect response from '
@@ -397,8 +400,7 @@ class ConnectHandler(OAuthHandler):
             do_flash("Access was denied by %s" % display_name, 'error')
             return redirect(current_app.config[CONNECT_DENY_REDIRECT_KEY])
         
-        return _connect_handler(self.get_connection_values(response), 
-                                self.provider_id)
+        return _connect_handler(self.get_connection_values(response), user_id)
     
         
 class TwitterConnectHandler(ConnectHandler):
@@ -423,7 +425,7 @@ class TwitterConnectHandler(ConnectHandler):
         user = api.VerifyCredentials()
         
         return dict(
-            user_id = current_user.get_id(),
+            #user_id = current_user.get_id(),
             provider_id = self.provider_id,
             provider_user_id = str(user.id),
             access_token = response['oauth_token'],
@@ -454,7 +456,7 @@ class FacebookConnectHandler(ConnectHandler):
         image_url = "http://graph.facebook.com/%s/picture" % profile['id']
         
         return dict(
-            user_id = current_user.get_id(),
+            #user_id = current_user.get_id(),
             provider_id = self.provider_id,
             provider_user_id = profile['id'],
             access_token = access_token,
@@ -494,6 +496,8 @@ def _configure_provider(app, blueprint, oauth, config):
     Factory = get_class_by_name(config['connection_factory'])
     
     setattr(service_provider, 'get_connection', Factory(**o_config))
+    setattr(service_provider, 'connect_handler', connect_handler)
+    setattr(service_provider, 'login_handler', login_handler)
     setattr(app.social, provider_id, service_provider)
     
     @service_provider.tokengetter
@@ -512,7 +516,7 @@ def _configure_provider(app, blueprint, oauth, config):
         attempts to connect their account with the provider with their local
         application account
         """
-        return connect_handler(response)
+        return getattr(app.social, provider_id).connect_handler(response)
     
     @blueprint.route('/login/%s' % provider_id, methods=['GET'], 
                      endpoint='login_%s_callback' % provider_id)
@@ -521,7 +525,7 @@ def _configure_provider(app, blueprint, oauth, config):
         """The route which the provider should redirect to after a user
         attempts to login with their account with the provider
         """
-        return login_handler(response)
+        return getattr(app.social, provider_id).login_handler(response)
     
         
 class Social(object):
