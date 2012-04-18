@@ -107,6 +107,21 @@ to configure your application with your provider's application values
         }
     }
 
+**foursquare**::
+
+    app.config['SOCIAL_FOURSQUARE'] = {
+        'oauth': {
+            'consumer_key': 'client id',
+            'consumer_secret': 'client secret',
+            'request_token_params': {
+                'response_type': 'code'
+            },
+            'access_token_params': {
+                'grant_type': 'authorization_code'
+            }
+        }
+    }
+
 Next you'll want to setup the `Social` extension and give it an instance of 
 your datastore. In the following code the post login page is set to a 
 hypothetical profile page instead of Flask-Security's default of the root 
@@ -135,7 +150,8 @@ add a mechanism on the profile page to do so. First the view method::
     def profile():
         return render_template('profile.html', content='Profile Page',
                 twitter_conn=current_app.social.twitter.get_connection(),
-                facebook_conn=current_app.social.facebook.get_connection())
+                facebook_conn=current_app.social.facebook.get_connection(),
+                foursquare_conn=current_app.social.foursquare.get_connection())
                 
 You should notice the mechanism for retreiving the current user's connection 
 with each service provider. If a connection is not found, the value will be 
@@ -156,6 +172,8 @@ with each service provider. If a connection is not found, the value will be
     {{ show_provider_button('twitter', 'Twitter', twitter_conn) }}
     
     {{ show_provider_button('facebook', 'Facebook', facebook_conn) }}
+
+    {{ show_provider_button('foursquare', 'foursquare', foursquare_conn) }}
     
 In the above template code a form is displayed depending on if a connection for 
 the current user exists or not. If the connection exists a disconnect button is 
@@ -188,10 +206,12 @@ for them to login via the provider. A login form would look like the following::
     
     {{ social_login('facebook', 'Facebook' )}}
 
+    {{ social_login('foursquare', 'foursquare' )}}
+
 In the above template code you'll notice the regular username and password login
-form and forms for the user to login via Twitter and Facebook. If the user has 
-an existing connection with the provider they will automatically be logged in 
-without having to enter their username or password.
+form and forms for the user to login via Twitter, Facebook, and foursquare. If 
+the user has an existing connection with the provider they will automatically be 
+logged in without having to enter their username or password.
 
 
 .. _configuration:
@@ -267,6 +287,9 @@ Factories
     
 .. autoclass:: flask_social.TwitterConnectionFactory
     :members:
+
+.. autoclass:: flask_social.FoursquareConnectionFactory
+    :members:
     
 OAuth Handlers
 --------------
@@ -279,6 +302,9 @@ OAuth Handlers
     
 .. autoclass:: flask_social.TwitterLoginHandler
     :members:
+
+.. autoclass:: flask_social.FoursquareLoginHandler
+    :members:
     
 .. autoclass:: flask_social.ConnectHandler
     :members:
@@ -287,6 +313,9 @@ OAuth Handlers
     :members:
     
 .. autoclass:: flask_social.TwitterConnectHandler
+    :members:
+
+.. autoclass:: flask_social.FoursquareConnectHandler
     :members:
     
 Exceptions
