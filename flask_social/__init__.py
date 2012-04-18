@@ -20,6 +20,11 @@ try:
 except ImportError:
     pass
 
+try:
+    import foursquare
+except ImportError:
+    pass    
+
 from flask.ext.security import (user_datastore, login_manager, 
     get_post_login_redirect, current_user, login_user, login_required, 
     Security, BadCredentialsError, User, get_class_by_name)
@@ -85,6 +90,21 @@ default_provider_config = {
             'access_token_url': '/oauth/access_token',
             'authorize_url': 'https://www.facebook.com/dialog/oauth',
         },
+    },
+    'foursquare': {
+        'id': 'foursquare',
+        'display_name': 'foursquare',
+        'install': 'pip install foursquare',
+        'login_handler': 'flask.ext.social.FoursquareLoginHandler',
+        'connect_handler': 'flask.ext.social.FoursquareConnectHandler',
+        'connection_factory': 'flask.ext.social.FoursquareConnectionFactory',
+        'oauth': {
+            'base_url': 'https://api.foursquare.com/v2/',
+            'request_token_url': None,
+            'access_token_url': 'https://foursquare.com/oauth2/access_token',
+            'authorize_url': 'https://foursquare.com/oauth2/authenticate'
+
+        }
     }
 }
 
@@ -309,6 +329,21 @@ class TwitterConnectionFactory(ConnectionFactory):
                            access_token_secret=getattr(connection, 'secret'))
 
 
+class FoursquareConnectionFactory(ConnectionFactory):
+    """The `FoursquareConnectionFactory` class creates `Connection` instances for
+    accounts connected to foursquare. The API instance for foursquare connections
+    are instance of the `foursquare library <https://github.com/mLewisLogic/foursquare/>`_
+    """
+    def __init__(self, consumer_key, consumer_secret, **kwargs):
+        super(FoursquareConnectionFactory, self).__init__('foursquare')
+        self.consumer_key = consumer_key
+        self.consumer_secret = consumer_secret
+        
+    def _create_api(self, connection):
+        return foursquare.Foursquare(
+                access_token=getattr(connection, 'access_token'))
+
+
 class OAuthHandler(object):
     """The `OAuthHandler` class is a base class for classes that handle OAuth
     interactions. See `LoginHandler` and `ConnectHandler`
@@ -357,7 +392,7 @@ class TwitterLoginHandler(LoginHandler):
         super(TwitterLoginHandler, self).__init__('twitter')
         
     def get_provider_user_id(self, response):
-        return response['user_id'] if response != None else None
+        return response['user_id'] if response else None
     
     
 class FacebookLoginHandler(LoginHandler):
@@ -369,10 +404,26 @@ class FacebookLoginHandler(LoginHandler):
         super(FacebookLoginHandler, self).__init__('facebook')
         
     def get_provider_user_id(self, response):
-        if response != None:
+        if response:
             graph = facebook.GraphAPI(response['access_token'])
             profile = graph.get_object("me")
             return profile['id']
+        return None
+
+
+class FoursquareLoginHandler(LoginHandler):
+    """The `FoursquareLoginHandler` class handles the authorization response from
+    foursquare. The foursquare account's user ID is not passed in the response, 
+    thus it must be retrieved with an API call.
+    """
+    def __init__(self, **kwargs):
+        super(FoursquareLoginHandler, self).__init__('foursquare')
+        
+    def get_provider_user_id(self, response):
+        if response:
+            api = foursquare.Foursquare(
+                access_token=getattr(response, 'access_token'))
+            return api.users()['user']['id']
         return None
 
 
@@ -425,7 +476,6 @@ class TwitterConnectHandler(ConnectHandler):
         user = api.VerifyCredentials()
         
         return dict(
-            #user_id = current_user.get_id(),
             provider_id = self.provider_id,
             provider_user_id = str(user.id),
             access_token = response['oauth_token'],
@@ -456,12 +506,41 @@ class FacebookConnectHandler(ConnectHandler):
         image_url = "http://graph.facebook.com/%s/picture" % profile['id']
         
         return dict(
-            #user_id = current_user.get_id(),
             provider_id = self.provider_id,
             provider_user_id = profile['id'],
             access_token = access_token,
             secret = None,
             display_name = profile['username'],
+            profile_url = profile_url,
+            image_url = image_url
+        )
+
+
+class FoursquareConnectHandler(ConnectHandler):
+    """The `FoursquareConnectHandler` class handles the connection procedure 
+    after a user authorizes a connection from foursquare. The foursquare acount's 
+    user ID is retrieved via an API call, otherwise the token is provided by 
+    the response from foursquare.
+    """
+    def __init__(self, **kwargs):
+        super(FoursquareConnectHandler, self).__init__('foursquare')
+        
+    def get_connection_values(self, response):
+        if not response:
+            return None
+        
+        access_token = response['access_token']
+        api = foursquare.Foursquare(access_token=access_token)
+        user = api.users()['user']
+        profile_url = user['canonicalUrl']
+        image_url = user['photo']
+        
+        return dict(
+            provider_id = self.provider_id,
+            provider_user_id = user['id'],
+            access_token = access_token,
+            secret = None,
+            display_name = profile_url.split('/')[-1:][0],
             profile_url = profile_url,
             image_url = image_url
         )

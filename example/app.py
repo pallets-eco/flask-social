@@ -84,14 +84,18 @@ def create_app(config):
         if current_user.is_authenticated():
             return redirect('/')
         
-        return render_template('login.html', content='Login Page', form=LoginForm())
+        return render_template(
+            'login.html', content='Login Page', form=LoginForm())
     
     @app.route('/profile')
     @login_required
     def profile():
-        return render_template('profile.html', content='Profile Page',
-                twitter_conn=current_app.social.twitter.get_connection(),
-                facebook_conn=current_app.social.facebook.get_connection())
+        return render_template(
+            'profile.html', 
+            content='Profile Page',
+            twitter_conn=current_app.social.twitter.get_connection(),
+            facebook_conn=current_app.social.facebook.get_connection(),
+            foursquare_conn=current_app.social.foursquare.get_connection())
     
     return app
 
