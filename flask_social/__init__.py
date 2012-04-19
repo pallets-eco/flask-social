@@ -33,7 +33,7 @@ from flask import (Blueprint, redirect, flash, session,
                    request, abort, current_app)
 
 from flask.signals import Namespace
-from flask.ext.oauth import OAuth
+from flask.ext.oauth import OAuth, OAuthRemoteApp
 
 from werkzeug.local import LocalProxy
 from werkzeug.utils import import_string
@@ -144,7 +144,6 @@ class ConnectionExistsError(Exception):
 Connection = None
 
             
-
 def _login_handler(provider_id, provider_user_id, oauth_response):
     """Shared method to handle the signin process"""
     
@@ -238,6 +237,35 @@ def _connect_handler(connection_values, user_id=None):
                                current_app.config[CONNECT_ALLOW_REDIRECT_KEY])
     return redirect(redirect_url)
 
+
+class Provider(object):
+    def __init__(self, remote_app, connection_factory, 
+                 login_handler, connect_handler):
+        self.remote_app = remote_app
+        self.connection_factory = connection_factory
+        self.login_handler = login_handler
+        self.connect_handler = connect_handler
+
+    def get_connection(self, *args, **kwargs):
+        return self.connection_factory(*args, **kwargs)
+
+    def login_handler(self, *args, **kwargs):
+        return self.login_handler(*args, **kwargs)
+
+    def connect_handler(self, *args, **kwargs):
+        return self.connect_handler(*args, **kwargs)
+
+    def tokengetter(self, *args, **kwargs):
+        return self.remote_app.tokengetter(*args, **kwargs)
+
+    def authorized_handler(self, *args, **kwargs):
+        return self.remote_app.authorized_handler(*args, **kwargs)
+
+    def authorize(self, *args, **kwargs):
+        return self.remote_app.authorize(*args, **kwargs)
+
+    def __str__(self):
+        return '<Provider name=%s>' % self.remote_app.name
 
 class ConnectionFactory(object):
     """The ConnectionFactory class creates `Connection` instances for the
@@ -564,36 +592,25 @@ def _configure_provider(app, blueprint, oauth, config):
         raise Exception('consumer_key and/or consumer_secret not found '
                         'for provider %s' % config['display_name'])
     
-    service_provider = oauth.remote_app(provider_id, **o_config)
+    remote_app = oauth.remote_app(provider_id, **o_config)
     
     def get_handler(clazz_name, config):
         return get_class_by_name(clazz_name)(**config)
     
     ConnectionFactoryClass = get_class_by_name(config['connection_factory'])
 
-    get_connection_key = 'get_connection'
-    connect_handler_key = 'connect_handler'
-    login_handler_key = 'login_handler'
-
-    connect_handler = get_handler(config[connect_handler_key], o_config)
-    login_handler = get_handler(config[login_handler_key], o_config)
     connection_factory = ConnectionFactoryClass(**o_config)
-    
-    setattr(service_provider, get_connection_key, connection_factory)
-    setattr(service_provider, connect_handler_key, connect_handler)
-    setattr(service_provider, login_handler_key, login_handler)
-    setattr(app.social, provider_id, service_provider)
+    login_handler = get_handler(config['login_handler'], o_config)
+    connect_handler = get_handler(config['connect_handler'], o_config)
 
-    msg = 'Registered social provider `%s`\n' \
-          'provider = %s\n' \
-          'connection factory=%s\n' \
-          'connect handler=%s\n' \
-          'login handler=%s' % (provider_id, 
-                                service_provider,
-                                service_provider.get_connection,
-                                service_provider.connect_handler,
-                                service_provider.login_handler) 
-    app.logger.debug(msg)
+    service_provider = Provider(remote_app,
+                        connection_factory, 
+                        login_handler, 
+                        connect_handler)
+
+    app.social.register_provider(provider_id, service_provider)
+
+    app.logger.debug('Registered social provider: %s' % service_provider)
     
     @service_provider.tokengetter
     def get_token():
@@ -667,6 +684,7 @@ class Social(object):
         [DELETE] /connect/<provider_id>/<provider_user_id>
     """
     def __init__(self, app=None, datastore=None):
+        self.providers = {}
         self.init_app(app, datastore)
         
     def init_app(self, app, datastore):
@@ -832,6 +850,15 @@ class Social(object):
             
         url_prefix = app.config[URL_PREFIX_KEY]
         app.register_blueprint(blueprint, url_prefix=url_prefix)
+
+    def register_provider(self, name, provider):
+        self.providers[name] = provider
+
+    def get_provider(self, name):
+        try:
+            return self.providers[name]
+        except KeyError:
+            return None
         
 
 def do_flash(message, category):
