@@ -569,15 +569,29 @@ def _configure_provider(app, blueprint, oauth, config):
     def get_handler(clazz_name, config):
         return get_class_by_name(clazz_name)(**config)
     
-    connect_handler = get_handler(config['connect_handler'], o_config)
-    login_handler = get_handler(config['login_handler'], o_config)
+    ConnectionFactoryClass = get_class_by_name(config['connection_factory'])
+
+    get_connection_key = 'get_connection'
+    connect_handler_key = 'connect_handler'
+    login_handler_key = 'login_handler'
+
+    connect_handler = get_handler(config[connect_handler_key], o_config)
+    login_handler = get_handler(config[login_handler_key], o_config)
+    connection_factory = ConnectionFactoryClass(**o_config)
     
-    Factory = get_class_by_name(config['connection_factory'])
-    
-    setattr(service_provider, 'get_connection', Factory(**o_config))
-    setattr(service_provider, 'connect_handler', connect_handler)
-    setattr(service_provider, 'login_handler', login_handler)
+    setattr(service_provider, get_connection_key, connection_factory)
+    setattr(service_provider, connect_handler_key, connect_handler)
+    setattr(service_provider, login_handler_key, login_handler)
     setattr(app.social, provider_id, service_provider)
+
+    msg = 'Registered social provider `%s`\n' \
+          'connection factory=%s\n' \
+          'connect handler=%s\n' \
+          'login handler=%s' % (provider_id, 
+                                service_provider.get_connection,
+                                service_provider.connect_handler,
+                                service_provider.login_handler) 
+    app.logger.debug(msg)
     
     @service_provider.tokengetter
     def get_token():
