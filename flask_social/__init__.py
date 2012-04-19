@@ -589,6 +589,7 @@ def _configure_provider(app, blueprint, oauth, config):
           'connection factory=%s\n' \
           'connect handler=%s\n' \
           'login handler=%s' % (provider_id, 
+                                service_provider,
                                 service_provider.get_connection,
                                 service_provider.connect_handler,
                                 service_provider.login_handler) 
