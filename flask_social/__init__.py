@@ -585,6 +585,7 @@ def _configure_provider(app, blueprint, oauth, config):
     setattr(app.social, provider_id, service_provider)
 
     msg = 'Registered social provider `%s`\n' \
+          'provider = %s\n' \
           'connection factory=%s\n' \
           'connect handler=%s\n' \
           'login handler=%s' % (provider_id, 
