@@ -33,7 +33,7 @@ from flask import (Blueprint, redirect, flash, session,
                    request, abort, current_app)
 
 from flask.signals import Namespace
-from flask.ext.oauth import OAuth, OAuthRemoteApp
+from flask.ext.oauth import OAuth
 
 from werkzeug.local import LocalProxy
 from werkzeug.utils import import_string
@@ -854,11 +854,8 @@ class Social(object):
     def register_provider(self, name, provider):
         self.providers[name] = provider
 
-    def get_provider(self, name):
-        try:
-            return self.providers[name]
-        except KeyError:
-            return None
+    def __getattr__(self, name):
+        return self.providers.get(name, None)
         
 
 def do_flash(message, category):
