@@ -4,7 +4,8 @@ Flask-Social
 .. module:: flask_social
 
 Flask-Social is a Flask extension that aims to add simple OAuth provider 
-integration for Flask-Security 
+integration for Flask-Security. Checkout the `example application <http://flask-social-example.herokuapp.com/>`_ 
+to perhaps get a better sense of what Flask-Social can do for you.
 
 
 Contents
