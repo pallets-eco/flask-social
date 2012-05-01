@@ -95,6 +95,9 @@ default_provider_config = {
             'request_token_url': None,
             'access_token_url': 'https://foursquare.com/oauth2/access_token',
             'authorize_url': 'https://foursquare.com/oauth2/authenticate',
+            'access_token_params': {
+                'grant_type': 'authorization_code'
+            },
             'request_token_params': {
                 'response_type': 'code'
             },
@@ -796,7 +799,7 @@ class Social(object):
                        provider_user_id=provider_user_id)
 
             try:
-                current_app.socia.datastore.remove_connection(
+                current_app.social.datastore.remove_connection(
                     current_user.get_id(),
                     provider_id,
                     provider_user_id)

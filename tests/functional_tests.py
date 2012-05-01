@@ -43,8 +43,17 @@ class SocialTest(unittest.TestCase):
 
     def _start_connect(self, t, provider):
         t.browser.go(t.url('/profile'))
-        twill.commands.fv('%s_connect_form' % provider, 'connect_' + provider, '')
+        twill.commands.fv('%s_connect_form' % provider,
+                          'connect_' + provider,
+                          '')
         t.browser.submit('connect_' + provider)
+
+    def _remove_connection(self, t, provider):
+        t.browser.go(t.url('/profile'))
+        twill.commands.fv('%s_disconnect_form' % provider,
+                          'disconnect_' + provider,
+                          '')
+        t.browser.submit('disconnect_' + provider)
 
 
 class TwitterSocialTests(SocialTest):
@@ -102,6 +111,14 @@ class TwitterSocialTests(SocialTest):
             self._login_provider(t, 'twitter')
             self._authorize_twitter(t)
             assert 'Profile Page' in t.browser.get_html()
+
+    def test_remove_connection(self):
+        with Twill(self.app) as t:
+            self._login(t)
+            self._start_connect(t, 'twitter')
+            self._authorize_twitter(t)
+            self._remove_connection(t, 'twitter')
+            assert 'Connection to Twitter removed' in t.browser.get_html()
 
 
 class MongoEngineTwitterSocialTests(TwitterSocialTests):
