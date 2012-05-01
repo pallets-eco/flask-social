@@ -6,28 +6,25 @@
 <form action="{{ url_for('social.remove_connection', provider_id='twitter', provider_user_id=twitter_conn.provider_user_id) }}?__METHOD__=DELETE" name='twitter_disconnect_form' method="POST">
   <input type="submit" name="disconnect_twitter" value="Remove Twitter Connection" />
 </form>
-{% else %}
+{% endif %}
 <form action="{{ url_for('social.connect', provider_id='twitter') }}" name='twitter_connect_form' method="POST">
   <input type="submit" name="connect_twitter" value="Connect with Twitter" />
 </form>
-{% endif %}
 
 {% if facebook_conn %}
 <form action="{{ url_for('social.remove_connection', provider_id='facebook', provider_user_id=facebook_conn.provider_user_id) }}?__METHOD__=DELETE" name='facebook_disconnect_form' method="POST">
   <input type="submit" name="disconnect_facebook" value="Remove Facebook Connection" />
 </form>
-{% else %}
+{% endif %}
 <form action="{{ url_for('social.connect', provider_id='facebook') }}" name='facebook_connect_form' method="POST">
   <input type="submit" name="connect_facebook" value="Connect with Facebook" />
 </form>
-{% endif %}
 
 {% if foursquare_conn %}
 <form action="{{ url_for('social.remove_connection', provider_id='foursquare', provider_user_id=foursquare_conn.provider_user_id) }}?__METHOD__=DELETE" name='foursquare_disconnect_form' method="POST">
   <input type="submit" name="disconnect_foursquare" value="Remove foursquare Connection" />
 </form>
-{% else %}
+{% endif %}
 <form action="{{ url_for('social.connect', provider_id='foursquare') }}" name='foursquare_connect_form' method="POST">
   <input type="submit" name="connect_foursquare" value="Connect with foursquare" />
 </form>
-{% endif %}

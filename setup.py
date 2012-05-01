@@ -15,7 +15,7 @@ from setuptools import setup
 
 setup(
     name='Flask-Social',
-    version='1.0.1-dev',
+    version='1.1.0-dev',
     url='https://github.com/mattupstate/flask-social',
     license='MIT',
     author='Matthew Wright',
@@ -23,15 +23,14 @@ setup(
     description='Simple OAuth provider integration for Flask-Security',
     long_description=__doc__,
     packages=[
-        'flask_social',
-        'flask_social.datastore'
+        'flask_social'
     ],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
     install_requires=[
-        'Flask-Security',
-        'Flask-Oauth'
+        'Flask-Security==1.3.0-dev',
+        'Flask-OAuth==0.12-dev'
     ],
     test_suite='nose.collector',
     tests_require=[
@@ -41,6 +40,8 @@ setup(
         'Flask-MongoEngine'
     ],
     dependency_links=[
+        'http://github.com/mattupstate/flask-security/tarball/master#egg=Flask-Security-1.3.0-dev',
+        'http://github.com/mattupstate/flask-oauth/tarball/master#egg=Flask-OAuth-0.12-dev',
         'http://github.com/sbook/flask-mongoengine/tarball/master#egg=Flask-MongoEngine-0.1.3-dev'
     ],
     classifiers=[
