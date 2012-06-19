@@ -44,9 +44,8 @@ class HTTPMethodOverrideMiddleware(object):
 
 
 def create_users():
-    for u in  (('matt', 'matt@lp.com', 'password'),):
-        current_app.security.datastore.create_user(
-            username=u[0], email=u[1], password=u[2])
+    for u in  (('matt@lp.com', 'password'),):
+        current_app.security.datastore.create_user(email=u[0], password=u[1])
 
 
 def populate_data():
@@ -117,14 +116,9 @@ def create_sqlalchemy_app(config=None, debug=True):
 
     class User(db.Model, UserMixin):
         id = db.Column(db.Integer, primary_key=True)
-        username = db.Column(db.String(255), unique=True)
         email = db.Column(db.String(255), unique=True)
         password = db.Column(db.String(120))
-        first_name = db.Column(db.String(120))
-        last_name = db.Column(db.String(120))
         active = db.Column(db.Boolean())
-        created_at = db.Column(db.DateTime())
-        modified_at = db.Column(db.DateTime())
         roles = db.relationship('Role', secondary=roles_users,
             backref=db.backref('users', lazy='dynamic'))
         connections = db.relationship('Connection',
@@ -167,7 +161,6 @@ def create_mongoengine_app(auth_config=None, debug=True):
         description = db.StringField(max_length=255)
 
     class User(db.Document, UserMixin):
-        username = db.StringField(unique=True, max_length=255)
         email = db.StringField(unique=True, max_length=255)
         password = db.StringField(required=True, max_length=120)
         active = db.BooleanField(default=True)
