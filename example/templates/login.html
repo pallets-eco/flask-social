@@ -2,9 +2,9 @@
 {% include "_nav.html" %}
 <p>{{ content }}</p>
 
-<form action="{{ url_for('auth.authenticate') }}" method="POST" name="login_form">
+<form action="{{ url_for('flask_security.authenticate') }}" method="POST" name="login_form">
   {{ form.hidden_tag() }}
-  {{ form.username.label }} {{ form.username }}<br/>
+  {{ form.email.label }} {{ form.email }}<br/>
   {{ form.password.label }} {{ form.password }}<br/>
   {{ form.remember.label }} {{ form.remember }}<br/>
   {{ form.submit }}

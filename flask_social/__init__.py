@@ -29,9 +29,10 @@ from importlib import import_module
 
 from flask import Blueprint, redirect, flash, session, request, current_app
 from flask.signals import Namespace
-from flask.ext.security import current_user, login_user, login_required, \
-    _get_post_login_redirect
+from flask.ext.security import current_user, login_user, login_required
+from flask.ext.security.utils import get_post_login_redirect
 from flask.ext.oauth import OAuth
+
 
 _signals = Namespace()
 
@@ -161,7 +162,7 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
 
         if login_user(user):
             redirect_url = session.pop(POST_OAUTH_LOGIN_SESSION_KEY,
-                                       _get_post_login_redirect())
+                                       get_post_login_redirect())
             current_app.logger.debug('User logged in via %s. Redirecting to '
                                      '%s' % (display_name, redirect_url))
             social_login_completed.send(current_app._get_current_object(),
@@ -730,7 +731,7 @@ class Social(object):
             current_app.logger.debug('Starting login via %s account. Callback '
                 'URL = %s' % (display_name, callback_url))
 
-            post_login = request.form.get('next', _get_post_login_redirect())
+            post_login = request.form.get('next', get_post_login_redirect())
             session['post_oauth_login_url'] = post_login
 
             return get_remote_app(provider_id).authorize(callback_url)

@@ -32,7 +32,7 @@ class SocialTest(unittest.TestCase):
 
     def _login(self, t):
         t.browser.go(t.url('/login'))
-        twill.commands.fv('login_form', 'username', 'matt@lp.com')
+        twill.commands.fv('login_form', 'email', 'matt@lp.com')
         twill.commands.fv('login_form', 'password', 'password')
         twill.commands.submit(0)
 

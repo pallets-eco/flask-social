@@ -4,9 +4,14 @@ Flask-Social
 .. module:: flask_social
 
 Flask-Social is a Flask extension that aims to add simple OAuth provider 
+<<<<<<< HEAD
 integration for `Flask-Security <http://packages.python.org/Flask-Security/>`_. 
 An example application is located at 
 `http://flask-social-example.herokuapp.com <http://flask-social-example.herokuapp.com/>`_. 
+=======
+integration for Flask-Security. Checkout the `example application <http://flask-social-example.herokuapp.com/>`_ 
+to perhaps get a better sense of what Flask-Social can do for you.
+>>>>>>> master
 
 
 Contents
@@ -188,7 +193,7 @@ Logging In
 If a user has a connection established to a service provider then it is possible
 for them to login via the provider. A login form would look like the following::
 
-    <form action="{{ url_for('auth.authenticate') }}" method="POST" name="login_form">
+    <form action="{{ url_for('flask_security.authenticate') }}" method="POST" name="login_form">
       {{ form.hidden_tag() }}
       {{ form.username.label }} {{ form.username }}<br/>
       {{ form.password.label }} {{ form.password }}<br/>
