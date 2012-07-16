@@ -32,18 +32,17 @@ def configure_provider(app, blueprint, oauth, config):
 
     remote_app = oauth.remote_app(provider_id, **o_config)
 
-    def get_handler(clazz_name, config):
-        return get_class_from_string(clazz_name)(**config)
+    def get_handler(clazz_name, config, callback):
+        return get_class_from_string(clazz_name)(callback=callback, **config)
 
     cf_class_name = config['connection_factory']
     ConnectionFactoryClass = get_class_from_string(cf_class_name)
 
-    connection_factory = ConnectionFactoryClass(**o_config)
-    login_handler = get_handler(config['login_handler'], o_config)
-    connect_handler = get_handler(config['connect_handler'], o_config)
+    cf = ConnectionFactoryClass(**o_config)
+    lh = get_handler(config['login_handler'], o_config, login_handler)
+    ch = get_handler(config['connect_handler'], o_config, connect_handler)
 
-    service_provider = Provider(remote_app, connection_factory,
-                                login_handler, connect_handler)
+    service_provider = Provider(remote_app, cf, lh, ch)
 
     @service_provider.tokengetter
     def get_token():

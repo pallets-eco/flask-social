@@ -37,6 +37,7 @@ from flask.ext.security import current_user, login_user, login_required
 from flask.ext.security.utils import get_post_login_redirect
 from flask.ext.oauth import OAuth
 
+from flask_social.core import ConnectionFactory, LoginHandler, ConnectHandler
 from flask_social.signals import social_connection_removed, social_login_completed, \
      social_login_failed, social_connection_created, social_connection_failed
 from flask_social.utils import get_class_from_string, do_flash, config_value, \
@@ -127,69 +128,6 @@ default_provider_config = {
 }
 
 
-
-
-class ConnectionFactory(object):
-    """The ConnectionFactory class creates `Connection` instances for the
-    specified provider from values stored in the connection repository. This
-    class should be extended whenever adding a new service provider to an
-    application.
-    """
-    def __init__(self, provider_id):
-        """Creates an instance of a `ConnectionFactory` for the specified
-        provider
-
-        :param provider_id: The provider ID
-        """
-        self.provider_id = provider_id
-
-    def _get_current_user_primary_connection(self):
-        return self._get_primary_connection(current_user.get_id())
-
-    def _get_primary_connection(self, user_id):
-        return current_app.social.datastore.get_primary_connection(
-            user_id, self.provider_id)
-
-    def _get_specific_connection(self, user_id, provider_user_id):
-        return current_app.social.datastore.get_connection(user_id,
-            self.provider_id, provider_user_id)
-
-    def _create_api(self, connection):
-        raise NotImplementedError("create_api method not implemented")
-
-    def get_connection(self, user_id=None, provider_user_id=None):
-        """Get a connection to the provider for the specified local user
-        and the specified provider user
-
-        :param user_id: The local user ID
-        :param provider_user_id: The provider user ID
-        """
-        if user_id == None and provider_user_id == None:
-            connection = self._get_current_user_primary_connection()
-        if user_id != None and provider_user_id == None:
-            connection = self._get_primary_connection(user_id)
-        if user_id != None and provider_user_id != None:
-            connection = self._get_specific_connection(user_id,
-                                                       provider_user_id)
-
-        def as_dict(model):
-            rv = {}
-            for key in ('user_id', 'provider_id', 'provider_user_id',
-                        'access_token', 'secret', 'display_name',
-                        'profile_url', 'image_url'):
-                rv[key] = getattr(model, key)
-            return rv
-
-        return dict(api=self._create_api(connection),
-                    **as_dict(connection))
-
-    def __call__(self, **kwargs):
-        try:
-            return self.get_connection(**kwargs)
-        except exceptions.ConnectionNotFoundError:
-            return None
-
-
 class FacebookConnectionFactory(ConnectionFactory):
     """The `FacebookConnectionFactory` class creates `Connection` instances for
     accounts connected to Facebook. The API instance for Facebook connections
@@ -255,52 +193,14 @@ class FoursquareConnectionFactory(ConnectionFactory):
                 access_token=getattr(connection, 'access_token'))
 
 
-class OAuthHandler(object):
-    """The `OAuthHandler` class is a base class for classes that handle OAuth
-    interactions. See `LoginHandler` and `ConnectHandler`
-    """
-    def __init__(self, provider_id):
-        self.provider_id = provider_id
-
-
-class LoginHandler(OAuthHandler):
-    """ A `LoginHandler` handles the login procedure after receiving
-    authorization from the service provider. The goal of a `LoginHandler` is
-    to retrieve the user ID of the account that granted access to the local
-    application. This ID is then used to find a connection within the local
-    application to the provider. If a connection is found, the local user is
-    retrieved from the user service and logged in autmoatically.
-    """
-    def get_provider_user_id(self, response):
-        """Gets the provider user ID from the OAuth reponse.
-        :param response: The OAuth response in the form of a dictionary
-        """
-        raise NotImplementedError("get_provider_user_id")
-
-    def __call__(self, response):
-        display_name = get_display_name(self.provider_id)
-
-        current_app.logger.debug('Received login response from '
-                                 '%s: %s' % (display_name, response))
-
-        if response is None:
-            do_flash("Access was denied to your %s "
-                     "account" % display_name, 'error')
-
-            return redirect(current_app.security.login_manager.login_view)
-
-        return views.login_handler(self.provider_id,
-                                   self.get_provider_user_id(response),
-                                   response)
-
-
 class TwitterLoginHandler(LoginHandler):
     """The `TwitterLoginHandler` class handles the authorization response from
     Twitter. The Twitter account's user ID is passed with the authorization
     response and an extra API call is not necessary.
     """
     def __init__(self, **kwargs):
-        super(TwitterLoginHandler, self).__init__('twitter')
+        super(TwitterLoginHandler, self).__init__('twitter',
+                                                  kwargs.get('callback'))
 
     def get_provider_user_id(self, response):
         return response['user_id'] if response else None
@@ -312,7 +212,8 @@ class FacebookLoginHandler(LoginHandler):
     thus it must be retrieved with an API call.
     """
     def __init__(self, **kwargs):
-        super(FacebookLoginHandler, self).__init__('facebook')
+        super(FacebookLoginHandler, self).__init__('facebook',
+                                                  kwargs.get('callback'))
 
     def get_provider_user_id(self, response):
         if response:
@@ -328,7 +229,8 @@ class GoogleLoginHandler(LoginHandler):
     thus it must be retrieved with an API call.
     """
     def __init__(self, **kwargs):
-        super(GoogleLoginHandler, self).__init__('google')
+        super(GoogleLoginHandler, self).__init__('google',
+                                                  kwargs.get('callback'))
 
     def get_provider_user_id(self, response):
         if response:
@@ -351,7 +253,8 @@ class FoursquareLoginHandler(LoginHandler):
     thus it must be retrieved with an API call.
     """
     def __init__(self, **kwargs):
-        super(FoursquareLoginHandler, self).__init__('foursquare')
+        super(FoursquareLoginHandler, self).__init__('foursquare',
+                                                  kwargs.get('callback'))
 
     def get_provider_user_id(self, response):
         if response:
@@ -361,42 +264,14 @@ class FoursquareLoginHandler(LoginHandler):
         return None
 
 
-class ConnectHandler(OAuthHandler):
-    """The `ConnectionHandler` class handles the connection procedure after
-    receiving authorization from the service provider. The goal of a
-    `ConnectHandler` is to retrieve the connection values that will be
-    persisted by the connection service.
-    """
-    def get_connection_values(self, response):
-        """Get the connection values to persist using values from the OAuth
-        response
-
-        :param response: The OAuth response as a dictionary of values
-        """
-        raise NotImplementedError("get_connection_values")
-
-    def __call__(self, response, user_id=None):
-        display_name = get_display_name(self.provider_id)
-
-        current_app.logger.debug('Received connect response from '
-                                 '%s. %s' % (display_name, response))
-
-        if response is None:
-            do_flash("Access was denied by %s" % display_name, 'error')
-            return redirect(config_value('CONNECT_DENY_REDIRECT'))
-
-        cv = self.get_connection_values(response)
-
-        return views.connect_handler(cv, user_id)
-
-
 class TwitterConnectHandler(ConnectHandler):
     """The `TwitterConnectHandler` class handles the connection procedure
     after a user authorizes a connection from Twitter. The connection values
     are all retrieved from the response, no extra API calls are necessary.
     """
     def __init__(self, **kwargs):
-        super(TwitterConnectHandler, self).__init__('twitter')
+        super(TwitterConnectHandler, self).__init__('twitter',
+                                                    kwargs.get('callback'))
         self.consumer_key = kwargs['consumer_key']
         self.consumer_secret = kwargs['consumer_secret']
 
@@ -429,7 +304,8 @@ class FacebookConnectHandler(ConnectHandler):
     the response from Facebook.
     """
     def __init__(self, **kwargs):
-        super(FacebookConnectHandler, self).__init__('facebook')
+        super(FacebookConnectHandler, self).__init__('facebook',
+                                                     kwargs.get('callback'))
 
     def get_connection_values(self, response):
         if not response:
@@ -459,7 +335,8 @@ class GoogleConnectHandler(ConnectHandler):
     the response from google.
     """
     def __init__(self, **kwargs):
-        super(GoogleConnectHandler, self).__init__('google')
+        super(GoogleConnectHandler, self).__init__('google',
+                                                   kwargs.get('callback'))
 
     def get_connection_values(self, response):
         if not response:
@@ -495,7 +372,8 @@ class FoursquareConnectHandler(ConnectHandler):
     the response from foursquare.
     """
     def __init__(self, **kwargs):
-        super(FoursquareConnectHandler, self).__init__('foursquare')
+        super(FoursquareConnectHandler, self).__init__('foursquare',
+                                                       kwargs.get('callback'))
 
     def get_connection_values(self, response):
         if not response:
