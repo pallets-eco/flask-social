@@ -127,121 +127,6 @@ default_provider_config = {
 }
 
 
-def _login_handler(provider_id, provider_user_id, oauth_response):
-    """Shared method to handle the signin process"""
-
-    if current_user.is_authenticated():
-        return redirect("/")
-
-    display_name = get_display_name(provider_id)
-
-    current_app.logger.debug('Attempting login via %s with provider user '
-                     '%s' % (display_name, provider_user_id))
-    try:
-        connection = current_app.social.datastore \
-            .get_connection_by_provider_user_id(provider_id, provider_user_id)
-        user = current_app.security.datastore.with_id(connection.user_id)
-
-        if login_user(user):
-            key = config_value('POST_OAUTH_LOGIN_SESSION_KEY')
-            redirect_url = session.pop(key, get_post_login_redirect())
-
-            current_app.logger.debug('User logged in via %s. Redirecting to '
-                                     '%s' % (display_name, redirect_url))
-            social_login_completed.send(current_app._get_current_object(),
-                                        provider_id=provider_id, user=user)
-            return redirect(redirect_url)
-
-        else:
-            current_app.logger.info('Inactive local user attempted '
-                                    'login via %s.' % display_name)
-            do_flash("Inactive user", "error")
-
-    except exceptions.ConnectionNotFoundError:
-        current_app.logger.info('Login attempt via %s failed because '
-                                'connection was not found.' % display_name)
-
-        msg = '%s account not associated with an existing user' % display_name
-        do_flash(msg, 'error')
-
-    except Exception, e:
-        current_app.logger.error('Unexpected error signing in '
-                                 'via %s: %s' % (display_name, e))
-
-    social_login_failed.send(current_app._get_current_object(),
-                             provider_id=provider_id,
-                             oauth_response=oauth_response)
-
-    return redirect(current_app.security.login_manager.login_view)
-
-
-def _connect_handler(cv, user_id=None):
-    """Shared method to handle the connection process
-
-    :param connection_values: A dictionary containing the connection values
-    :param provider_id: The provider ID the connection shoudl be made to
-    """
-    provider_id = cv['provider_id']
-    display_name = get_display_name(provider_id)
-    cv['user_id'] = user_id or current_user.get_id()
-
-    try:
-        connection = current_app.social.datastore.save_connection(**cv)
-        current_app.logger.debug('Connection to %s established '
-                                 'for %s' % (display_name, current_user))
-        social_connection_created.send(current_app._get_current_object(),
-                                       user=current_user._get_current_object(),
-                                       connection=connection)
-        do_flash("Connection established to %s" % display_name, 'success')
-
-    except exceptions.ConnectionExistsError, e:
-        current_app.logger.debug('Connection to %s exists already '
-                                 'for %s' % (display_name, current_user))
-        do_flash("A connection is already established with %s "
-              "to your account" % display_name, 'notice')
-
-    except Exception, e:
-        current_app.logger.error('Unexpected error connecting %s account for '
-                                 'user. Reason: %s' % (display_name, e))
-        social_connection_failed.send(current_app._get_current_object(),
-                                      user=current_user._get_current_object(),
-                                      error=e)
-        do_flash("Could not make connection to %s. "
-              "Please try again later." % display_name, 'error')
-
-    redirect_url = session.pop(config_value('POST_OAUTH_CONNECT_SESSION_KEY'),
-                               config_value('CONNECT_ALLOW_REDIRECT'))
-    return redirect(redirect_url)
-
-
-class Provider(object):
-    def __init__(self, remote_app, connection_factory,
-                 login_handler, connect_handler):
-        self.remote_app = remote_app
-        self.connection_factory = connection_factory
-        self.login_handler = login_handler
-        self.connect_handler = connect_handler
-
-    def get_connection(self, *args, **kwargs):
-        return self.connection_factory(*args, **kwargs)
-
-    def login_handler(self, *args, **kwargs):
-        return self.login_handler(*args, **kwargs)
-
-    def connect_handler(self, *args, **kwargs):
-        return self.connect_handler(*args, **kwargs)
-
-    def tokengetter(self, *args, **kwargs):
-        return self.remote_app.tokengetter(*args, **kwargs)
-
-    def authorized_handler(self, *args, **kwargs):
-        return self.remote_app.authorized_handler(*args, **kwargs)
-
-    def authorize(self, *args, **kwargs):
-        return self.remote_app.authorize(*args, **kwargs)
-
-    def __str__(self):
-        return '<Provider name=%s>' % self.remote_app.name
 
 
 class ConnectionFactory(object):
@@ -404,9 +289,9 @@ class LoginHandler(OAuthHandler):
 
             return redirect(current_app.security.login_manager.login_view)
 
-        return _login_handler(self.provider_id,
-                              self.get_provider_user_id(response),
-                              response)
+        return views.login_handler(self.provider_id,
+                                   self.get_provider_user_id(response),
+                                   response)
 
 
 class TwitterLoginHandler(LoginHandler):
@@ -500,7 +385,9 @@ class ConnectHandler(OAuthHandler):
             do_flash("Access was denied by %s" % display_name, 'error')
             return redirect(config_value('CONNECT_DENY_REDIRECT'))
 
-        return _connect_handler(self.get_connection_values(response), user_id)
+        cv = self.get_connection_values(response)
+
+        return views.connect_handler(cv, user_id)
 
 
 class TwitterConnectHandler(ConnectHandler):
@@ -631,70 +518,6 @@ class FoursquareConnectHandler(ConnectHandler):
         )
 
 
-def _configure_provider(app, blueprint, oauth, config):
-    """
-    Configures and registers a service provider connection Factory with the
-    main application. The connection factory is accessible via:
-
-        from flask import current_app as app
-        app.social.<provider_id>
-    """
-    provider_id = config['id']
-    o_config = config['oauth']
-
-    try:
-        o_config['consumer_key']
-        o_config['consumer_secret']
-    except KeyError:
-        raise Exception('consumer_key and/or consumer_secret not found '
-                        'for provider %s' % config['display_name'])
-
-    remote_app = oauth.remote_app(provider_id, **o_config)
-
-    def get_handler(clazz_name, config):
-        return get_class_from_string(clazz_name)(**config)
-
-    cf_class_name = config['connection_factory']
-    ConnectionFactoryClass = get_class_from_string(cf_class_name)
-
-    connection_factory = ConnectionFactoryClass(**o_config)
-    login_handler = get_handler(config['login_handler'], o_config)
-    connect_handler = get_handler(config['connect_handler'], o_config)
-
-    service_provider = Provider(remote_app, connection_factory,
-                                login_handler, connect_handler)
-
-    @service_provider.tokengetter
-    def get_token():
-        # Social doesn't use the builtin remote method calls feature of the
-        # Flask-OAuth extension so we don't need to return a token. This does,
-        # however, need to be configured
-        return None
-
-    @blueprint.route('/connect/%s' % provider_id, methods=['GET'],
-                     endpoint='connect_%s_callback' % provider_id)
-    @login_required
-    @service_provider.authorized_handler
-    def connect_callback(response):
-        """The route which the provider should redirect to after a user
-        attempts to connect their account with the provider with their local
-        application account
-        """
-        return getattr(app.social, provider_id).connect_handler(response)
-
-    @blueprint.route('/login/%s' % provider_id, methods=['GET'],
-                     endpoint='login_%s_callback' % provider_id)
-    @service_provider.authorized_handler
-    def login_callback(response):
-        """The route which the provider should redirect to after a user
-        attempts to login with their account with the provider
-        """
-        return getattr(app.social, provider_id).login_handler(response)
-
-    app.social.register_provider(provider_id, service_provider)
-    app.logger.debug('Registered social provider: %s' % service_provider)
-
-
 class Social(object):
     """The `Social` extension adds integration with various service providers to
     your application. Currently Twitter and Facebook are supported. When
@@ -786,8 +609,8 @@ class Social(object):
         blueprint = views.create_blueprint(app, 'flask_social', __name__,
                                            url_prefix=url_prefix)
 
-        for provider_config in provider_configs:
-            _configure_provider(app, blueprint, self.oauth, provider_config)
+        for pc in provider_configs:
+            views.configure_provider(app, blueprint, self.oauth, pc)
 
         app.register_blueprint(blueprint)
 
