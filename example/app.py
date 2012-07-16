@@ -45,7 +45,11 @@ class HTTPMethodOverrideMiddleware(object):
 
 def create_users():
     for u in  (('matt@lp.com', 'password'),):
-        current_app.security.datastore.create_user(email=u[0], password=u[1])
+        try:
+            current_app.security.datastore.create_user(email=u[0], password=u[1])
+        except Exception, e:
+            print 'Errors: %s' % e.errors
+            raise
 
 
 def populate_data():
@@ -106,8 +110,8 @@ def create_sqlalchemy_app(config=None, debug=True):
     db = SQLAlchemy(app)
 
     roles_users = db.Table('roles_users',
-        db.Column('user_id', db.Integer(), db.ForeignKey('role.id')),
-        db.Column('role_id', db.Integer(), db.ForeignKey('user.id')))
+        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
     class Role(db.Model, RoleMixin):
         id = db.Column(db.Integer(), primary_key=True)
@@ -119,10 +123,10 @@ def create_sqlalchemy_app(config=None, debug=True):
         email = db.Column(db.String(255), unique=True)
         password = db.Column(db.String(120))
         active = db.Column(db.Boolean())
+        remember_token = db.Column(db.String(255))
+        authentication_token = db.Column(db.String(255))
         roles = db.relationship('Role', secondary=roles_users,
-            backref=db.backref('users', lazy='dynamic'))
-        connections = db.relationship('Connection',
-            backref=db.backref('user', lazy='joined'), lazy='dynamic')
+                    backref=db.backref('users', lazy='dynamic'))
 
     class Connection(db.Model):
         id = db.Column(db.Integer, primary_key=True)
@@ -164,6 +168,8 @@ def create_mongoengine_app(auth_config=None, debug=True):
         email = db.StringField(unique=True, max_length=255)
         password = db.StringField(required=True, max_length=120)
         active = db.BooleanField(default=True)
+        remember_token = db.StringField(max_length=255)
+        authentication_token = db.StringField(max_length=255)
         roles = db.ListField(db.ReferenceField(Role), default=[])
 
         @property
