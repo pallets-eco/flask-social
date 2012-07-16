@@ -1,4 +1,6 @@
 
+import os
+import pkgutil
 from importlib import import_module
 
 from flask import current_app, flash
@@ -45,3 +47,9 @@ def get_remote_app(provider_id):
     param: provider_id: The ID of the provider to retrive
     """
     return getattr(current_app.social, provider_id)
+
+
+def get_default_provider_names():
+    from flask_social import providers
+    pkg = os.path.dirname(providers.__file__)
+    return [name for _, name, _ in pkgutil.iter_modules([pkg])]

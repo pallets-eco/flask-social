@@ -1,9 +1,22 @@
 
 from flask import current_app, redirect
 from flask.ext.security import current_user
+from flask.ext.oauth import OAuth
 
 from flask_social import exceptions
-from flask_social.utils import get_display_name, do_flash, config_value
+from flask_social.utils import get_display_name, do_flash, config_value, \
+     get_default_provider_names, get_class_from_string
+
+
+default_config = {
+    'SOCIAL_URL_PREFIX': None,
+    'SOCIAL_APP_URL': 'http://127.0.0.1:5000',
+    'SOCIAL_CONNECT_ALLOW_REDIRECT': '/profile',
+    'SOCIAL_CONNECT_DENY_REDIRECT': '/profile',
+    'SOCIAL_FLASH_MESSAGES': True,
+    'SOCIAL_POST_OAUTH_CONNECT_SESSION_KEY': 'post_oauth_connect_url',
+    'SOCIAL_POST_OAUTH_LOGIN_SESSION_KEY': 'post_oauth_login_url'
+}
 
 
 class Provider(object):
@@ -104,7 +117,6 @@ class OAuthHandler(object):
     def __init__(self, provider_id, callback=None):
         self.provider_id = provider_id
         self.callback = callback
-        print callback
 
 
 class LoginHandler(OAuthHandler):
@@ -165,3 +177,74 @@ class ConnectHandler(OAuthHandler):
         cv = self.get_connection_values(response)
 
         return self.callback(cv, user_id)
+
+
+class Social(object):
+
+    def __init__(self, app=None, datastore=None):
+        self.providers = {}
+        self.init_app(app, datastore)
+
+    def init_app(self, app, datastore):
+        """Initialize the application with the Social module
+
+        :param app: The Flask application
+        :param datastore: Connection datastore instance
+        """
+
+        self.datastore = datastore
+
+        for key, value in default_config.items():
+            app.config.setdefault(key, value)
+
+        default_provider_names = get_default_provider_names()
+
+        provider_configs = []
+
+        # Look for providers in config
+        for key in app.config.keys():
+            if key.startswith('SOCIAL_') and key not in default_config:
+                provider_id = key.replace('SOCIAL_', '').lower()
+
+                if provider_id not in default_provider_names:
+                    # Custom provider, grab the whole config
+                    provider_configs.append(app.config.get(key))
+                    continue
+
+                # Default provider, update with defaults
+                co = 'flask_social.providers.%s::default_config' % provider_id
+
+                d_config = get_class_from_string(co).copy()
+                d_oauth_config = d_config['oauth'].copy()
+
+                d_config.update(app.config[key])
+                d_oauth_config.update(app.config[key]['oauth'])
+                d_config['oauth'] = d_oauth_config
+
+                app.config[key] = d_config
+
+                provider_configs.append(d_config)
+
+        self.oauth = OAuth()
+
+        from flask_social import views
+
+        # Configure the URL handlers for each fo the configured providers
+        blueprint = views.create_blueprint(
+            app, 'flask_social', __name__,
+            url_prefix=config_value('URL_PREFIX', app=app))
+
+        for pc in provider_configs:
+            pid, p = views.configure_provider(app, blueprint, self.oauth, pc)
+            self.register_provider(pid, p)
+            app.logger.debug('Registered social provider: %s' % p)
+
+        app.register_blueprint(blueprint)
+
+        app.social = self
+
+    def register_provider(self, name, provider):
+        self.providers[name] = provider
+
+    def __getattr__(self, name):
+        return self.providers.get(name, None)

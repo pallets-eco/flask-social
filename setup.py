@@ -23,7 +23,8 @@ setup(
     description='Simple OAuth provider integration for Flask-Security',
     long_description=__doc__,
     packages=[
-        'flask_social'
+        'flask_social',
+        'flask_social.providers'
     ],
     zip_safe=False,
     include_package_data=True,

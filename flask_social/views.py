@@ -71,8 +71,7 @@ def configure_provider(app, blueprint, oauth, config):
         """
         return getattr(app.social, provider_id).login_handler(response)
 
-    app.social.register_provider(provider_id, service_provider)
-    app.logger.debug('Registered social provider: %s' % service_provider)
+    return provider_id, service_provider
 
 
 def login(provider_id):
