@@ -32,35 +32,25 @@ try:
 except ImportError:
     pass
 
-from importlib import import_module
-import os
-
-from flask import Blueprint, redirect, flash, session, request, current_app
+from flask import Blueprint, redirect, session, request, current_app
 from flask.signals import Namespace
 from flask.ext.security import current_user, login_user, login_required
 from flask.ext.security.utils import get_post_login_redirect
 from flask.ext.oauth import OAuth
 
+from .utils import get_class_from_string, do_flash, config_value
 
 _signals = Namespace()
-
-URL_PREFIX_KEY = 'SOCIAL_URL_PREFIX'
-APP_URL_KEY = 'SOCIAL_APP_URL'
-CONNECTION_DATASTORE_KEY = 'SOCIAL_CONNECTION_DATASTORE'
-CONNECT_ALLOW_REDIRECT_KEY = 'SOCIAL_CONNECT_ALLOW_REDIRECT'
-CONNECT_DENY_REDIRECT_KEY = 'SOCIAL_CONNECT_DENY_REDIRECT'
-FLASH_MESSAGES_KEY = 'SOCIAL_FLASH_MESSAGES'
 
 POST_OAUTH_CONNECT_SESSION_KEY = 'post_oauth_connect_url'
 POST_OAUTH_LOGIN_SESSION_KEY = 'post_oauth_login_url'
 
 default_config = {
-    URL_PREFIX_KEY:             None,
-    APP_URL_KEY:                'http://127.0.0.1:5000',
-    CONNECTION_DATASTORE_KEY:   'connection_datastore',
-    CONNECT_ALLOW_REDIRECT_KEY: '/profile',
-    CONNECT_DENY_REDIRECT_KEY:  '/profile',
-    FLASH_MESSAGES_KEY:         True
+    'SOCIAL_URL_PREFIX': None,
+    'SOCIAL_APP_URL': 'http://127.0.0.1:5000',
+    'SOCIAL_CONNECT_ALLOW_REDIRECT': '/profile',
+    'SOCIAL_CONNECT_DENY_REDIRECT':  '/profile',
+    'SOCIAL_FLASH_MESSAGES':         True
 }
 
 default_provider_config = {
@@ -151,7 +141,7 @@ def get_authorize_callback(endpoint):
 
     param: endpoint: Absolute path to append to the application's host
     """
-    return '%s%s' % (current_app.config[APP_URL_KEY], endpoint)
+    return '%s%s' % (config_value('APP_URL'), endpoint)
 
 
 def get_remote_app(provider_id):
@@ -201,14 +191,14 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
         else:
             current_app.logger.info('Inactive local user attempted '
                                     'login via %s.' % display_name)
-            _do_flash("Inactive user", "error")
+            do_flash("Inactive user", "error")
 
     except ConnectionNotFoundError:
         current_app.logger.info('Login attempt via %s failed because '
                                 'connection was not found.' % display_name)
 
         msg = '%s account not associated with an existing user' % display_name
-        _do_flash(msg, 'error')
+        do_flash(msg, 'error')
 
     except Exception, e:
         current_app.logger.error('Unexpected error signing in '
@@ -238,12 +228,12 @@ def _connect_handler(cv, user_id=None):
         social_connection_created.send(current_app._get_current_object(),
                                        user=current_user._get_current_object(),
                                        connection=connection)
-        _do_flash("Connection established to %s" % display_name, 'success')
+        do_flash("Connection established to %s" % display_name, 'success')
 
     except ConnectionExistsError, e:
         current_app.logger.debug('Connection to %s exists already '
                                  'for %s' % (display_name, current_user))
-        _do_flash("A connection is already established with %s "
+        do_flash("A connection is already established with %s "
               "to your account" % display_name, 'notice')
 
     except Exception, e:
@@ -252,11 +242,11 @@ def _connect_handler(cv, user_id=None):
         social_connection_failed.send(current_app._get_current_object(),
                                       user=current_user._get_current_object(),
                                       error=e)
-        _do_flash("Could not make connection to %s. "
+        do_flash("Could not make connection to %s. "
               "Please try again later." % display_name, 'error')
 
     redirect_url = session.pop(POST_OAUTH_CONNECT_SESSION_KEY,
-                               current_app.config[CONNECT_ALLOW_REDIRECT_KEY])
+                               config_value('CONNECT_ALLOW_REDIRECT'))
     return redirect(redirect_url)
 
 
@@ -445,7 +435,7 @@ class LoginHandler(OAuthHandler):
                                  '%s: %s' % (display_name, response))
 
         if response is None:
-            _do_flash("Access was denied to your %s "
+            do_flash("Access was denied to your %s "
                      "account" % display_name, 'error')
 
             return redirect(current_app.security.login_manager.login_view)
@@ -543,8 +533,8 @@ class ConnectHandler(OAuthHandler):
                                  '%s. %s' % (display_name, response))
 
         if response is None:
-            _do_flash("Access was denied by %s" % display_name, 'error')
-            return redirect(current_app.config[CONNECT_DENY_REDIRECT_KEY])
+            do_flash("Access was denied by %s" % display_name, 'error')
+            return redirect(config_value('CONNECT_DENY_REDIRECT'))
 
         return _connect_handler(self.get_connection_values(response), user_id)
 
@@ -698,10 +688,10 @@ def _configure_provider(app, blueprint, oauth, config):
     remote_app = oauth.remote_app(provider_id, **o_config)
 
     def get_handler(clazz_name, config):
-        return _get_class_from_string(clazz_name)(**config)
+        return get_class_from_string(clazz_name)(**config)
 
     cf_class_name = config['connection_factory']
-    ConnectionFactoryClass = _get_class_from_string(cf_class_name)
+    ConnectionFactoryClass = get_class_from_string(cf_class_name)
 
     connection_factory = ConnectionFactoryClass(**o_config)
     login_handler = get_handler(config['login_handler'], o_config)
@@ -859,7 +849,7 @@ class Social(object):
                 '%(display_name)s account to user account %(current_user)s. '
                 'Callback URL = %(callback_url)s' % ctx)
 
-            allow_view = current_app.config[CONNECT_ALLOW_REDIRECT_KEY]
+            allow_view = config_value('CONNECT_ALLOW_REDIRECT')
             post_connect = request.form.get('next', allow_view)
             session[POST_OAUTH_CONNECT_SESSION_KEY] = post_connect
 
@@ -886,13 +876,13 @@ class Social(object):
                 current_app.logger.debug('Removed all connections to '
                                          '%(provider)s for %(user)s' % ctx)
 
-                _do_flash("All connections to %s removed" % display_name, 'info')
+                do_flash("All connections to %s removed" % display_name, 'info')
             except:
                 current_app.logger.error('Unable to remove all connections to '
                                          '%(provider)s for %(user)s' % ctx)
 
                 msg = "Unable to remove connection to %(provider)s" % ctx
-                _do_flash(msg, 'error')
+                do_flash(msg, 'error')
 
             return redirect(request.referrer)
 
@@ -922,19 +912,19 @@ class Social(object):
                 current_app.logger.debug('Removed connection to %(provider)s '
                     'account %(provider_user_id)s for %(user)s' % ctx)
 
-                _do_flash("Connection to %(provider)s removed" % ctx, 'info')
+                do_flash("Connection to %(provider)s removed" % ctx, 'info')
 
             except ConnectionNotFoundError:
                 current_app.logger.error(
                     'Unable to remove connection to %(provider)s account '
                     '%(provider_user_id)s for %(user)s' % ctx)
 
-                _do_flash("Unabled to remove connection to %(provider)s" % ctx,
+                do_flash("Unabled to remove connection to %(provider)s" % ctx,
                       'error')
 
             return redirect(request.referrer)
 
-        url_prefix = app.config[URL_PREFIX_KEY]
+        url_prefix = config_value('URL_PREFIX', app=app)
 
         # Configure the URL handlers for each fo the configured providers
         for provider_config in provider_configs:
@@ -947,22 +937,6 @@ class Social(object):
 
     def __getattr__(self, name):
         return self.providers.get(name, None)
-
-
-def _do_flash(message, category):
-    if current_app.config[FLASH_MESSAGES_KEY]:
-        flash(message, category)
-
-
-def _get_class_from_string(clazz_name):
-    """Get a reference to a class by its configuration key name."""
-    cv = clazz_name.split('::')
-    cm = import_module(cv[0])
-    return getattr(cm, cv[1])
-
-
-def _config_value(app, key):
-    return app.config['SOCIAL_' + key.upper()]
 
 
 # Signals
