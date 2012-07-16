@@ -46,7 +46,7 @@ def get_remote_app(provider_id):
 
     param: provider_id: The ID of the provider to retrive
     """
-    return getattr(current_app.social, provider_id)
+    return getattr(current_app.extensions['social'], provider_id)
 
 
 def get_default_provider_names():

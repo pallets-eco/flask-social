@@ -2,11 +2,20 @@
 from flask import current_app, redirect
 from flask.ext.security import current_user
 from flask.ext.oauth import OAuth
+from werkzeug.local import LocalProxy
 
 from flask_social import exceptions
 from flask_social.utils import get_display_name, do_flash, config_value, \
      get_default_provider_names, get_class_from_string
 
+
+_security = LocalProxy(lambda: current_app.extensions['security'])
+
+_social = LocalProxy(lambda: current_app.extensions['social'])
+
+_datastore = LocalProxy(lambda: _social.datastore)
+
+_logger = LocalProxy(lambda: current_app.logger)
 
 default_config = {
     'SOCIAL_URL_PREFIX': None,
@@ -67,11 +76,11 @@ class ConnectionFactory(object):
         return self._get_primary_connection(current_user.get_id())
 
     def _get_primary_connection(self, user_id):
-        return current_app.social.datastore.get_primary_connection(
+        return _datastore.get_primary_connection(
             user_id, self.provider_id)
 
     def _get_specific_connection(self, user_id, provider_user_id):
-        return current_app.social.datastore.get_connection(user_id,
+        return _datastore.get_connection(user_id,
             self.provider_id, provider_user_id)
 
     def _create_api(self, connection):
@@ -136,14 +145,14 @@ class LoginHandler(OAuthHandler):
     def __call__(self, response):
         display_name = get_display_name(self.provider_id)
 
-        current_app.logger.debug('Received login response from '
+        _logger.debug('Received login response from '
                                  '%s: %s' % (display_name, response))
 
         if response is None:
             do_flash("Access was denied to your %s "
                      "account" % display_name, 'error')
 
-            return redirect(current_app.security.login_manager.login_view)
+            return redirect(_security.login_manager.login_view)
 
         uid = self.get_provider_user_id(response)
 
@@ -167,7 +176,7 @@ class ConnectHandler(OAuthHandler):
     def __call__(self, response, user_id=None):
         display_name = get_display_name(self.provider_id)
 
-        current_app.logger.debug('Received connect response from '
+        _logger.debug('Received connect response from '
                                  '%s. %s' % (display_name, response))
 
         if response is None:
@@ -179,11 +188,21 @@ class ConnectHandler(OAuthHandler):
         return self.callback(cv, user_id)
 
 
+class _SocialState(object):
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key.lower(), value)
+
+    def __getattr__(self, name):
+        return self.providers.get(name, None)
+
+
 class Social(object):
 
     def __init__(self, app=None, datastore=None):
-        self.providers = {}
-        self.init_app(app, datastore)
+        if app is not None and datastore is not None:
+            self._state = self.init_app(app, datastore)
 
     def init_app(self, app, datastore):
         """Initialize the application with the Social module
@@ -191,8 +210,6 @@ class Social(object):
         :param app: The Flask application
         :param datastore: Connection datastore instance
         """
-
-        self.datastore = datastore
 
         for key, value in default_config.items():
             app.config.setdefault(key, value)
@@ -225,7 +242,7 @@ class Social(object):
 
                 provider_configs.append(d_config)
 
-        self.oauth = OAuth()
+        oauth = OAuth()
 
         from flask_social import views
 
@@ -234,17 +251,26 @@ class Social(object):
             app, 'flask_social', __name__,
             url_prefix=config_value('URL_PREFIX', app=app))
 
+        providers = {}
+
         for pc in provider_configs:
-            pid, p = views.configure_provider(app, blueprint, self.oauth, pc)
-            self.register_provider(pid, p)
+            pid, p = views.configure_provider(app, blueprint, oauth, pc)
+            providers[pid] = p
             app.logger.debug('Registered social provider: %s' % p)
 
         app.register_blueprint(blueprint)
 
-        app.social = self
+        state = _SocialState(
+            oauth=oauth,
+            providers=providers,
+            datastore=datastore)
 
-    def register_provider(self, name, provider):
-        self.providers[name] = provider
+        if not hasattr(app, 'extensions'):
+            app.extensions = {}
+
+        app.extensions['social'] = state
+
+        return state
 
     def __getattr__(self, name):
-        return self.providers.get(name, None)
+        return getattr(self._state, name, None)

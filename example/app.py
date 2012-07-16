@@ -48,7 +48,7 @@ def create_users():
         try:
             current_app.security.datastore.create_user(email=u[0], password=u[1])
         except Exception, e:
-            print 'Errors: %s' % e.errors
+            print 'Errors: %s' % e
             raise
 
 
@@ -105,7 +105,7 @@ def create_app(config, debug=True):
 
 def create_sqlalchemy_app(config=None, debug=True):
     app = create_app(config, debug)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/flask_social_example.sqlite'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/flask_social_test'
 
     db = SQLAlchemy(app)
 
@@ -127,6 +127,8 @@ def create_sqlalchemy_app(config=None, debug=True):
         authentication_token = db.Column(db.String(255))
         roles = db.relationship('Role', secondary=roles_users,
                     backref=db.backref('users', lazy='dynamic'))
+        connections = db.relationship('Connection',
+                    backref=db.backref('user', lazy='joined'))
 
     class Connection(db.Model):
         id = db.Column(db.Integer, primary_key=True)
@@ -140,8 +142,8 @@ def create_sqlalchemy_app(config=None, debug=True):
         image_url = db.Column(db.String(512))
         rank = db.Column(db.Integer)
 
-    Security(app, SQLAlchemyUserDatastore(db, User, Role))
-    Social(app, SQLAlchemyConnectionDatastore(db, Connection))
+    app.security = Security(app, SQLAlchemyUserDatastore(db, User, Role))
+    app.social = Social(app, SQLAlchemyConnectionDatastore(db, Connection))
 
     @app.before_first_request
     def before_first_request():
@@ -154,7 +156,7 @@ def create_sqlalchemy_app(config=None, debug=True):
 
 def create_mongoengine_app(auth_config=None, debug=True):
     app = create_app(auth_config, debug)
-    app.config['MONGODB_DB'] = 'flask_social_example'
+    app.config['MONGODB_DB'] = 'flask_social_test'
     app.config['MONGODB_HOST'] = 'localhost'
     app.config['MONGODB_PORT'] = 27017
 
@@ -191,8 +193,8 @@ def create_mongoengine_app(auth_config=None, debug=True):
         def user(self):
             return User.objects(id=self.user_id).first()
 
-    Security(app, MongoEngineUserDatastore(db, User, Role))
-    Social(app, MongoEngineConnectionDatastore(db, Connection))
+    app.security = Security(app, MongoEngineUserDatastore(db, User, Role))
+    app.social = Social(app, MongoEngineConnectionDatastore(db, Connection))
 
     @app.before_first_request
     def before_first_request():
