@@ -41,8 +41,7 @@ setup(
     ],
     dependency_links=[
         'http://github.com/mattupstate/flask-security/tarball/develop#egg=Flask-Security-1.3.0-dev',
-        'http://github.com/mattupstate/flask-oauth/tarball/master#egg=Flask-OAuth-0.12-dev',
-        'http://github.com/sbook/flask-mongoengine/tarball/master#egg=Flask-MongoEngine-0.1.3-dev'
+        'http://github.com/mattupstate/flask-oauth/tarball/master#egg=Flask-OAuth-0.12-dev'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
