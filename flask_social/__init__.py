@@ -33,24 +33,23 @@ except ImportError:
     pass
 
 from flask import Blueprint, redirect, session, request, current_app
-from flask.signals import Namespace
 from flask.ext.security import current_user, login_user, login_required
 from flask.ext.security.utils import get_post_login_redirect
 from flask.ext.oauth import OAuth
 
+from .signals import social_connection_removed, social_login_completed, \
+     social_login_failed, social_connection_created, social_connection_failed
 from .utils import get_class_from_string, do_flash, config_value
 
-_signals = Namespace()
-
-POST_OAUTH_CONNECT_SESSION_KEY = 'post_oauth_connect_url'
-POST_OAUTH_LOGIN_SESSION_KEY = 'post_oauth_login_url'
 
 default_config = {
     'SOCIAL_URL_PREFIX': None,
     'SOCIAL_APP_URL': 'http://127.0.0.1:5000',
     'SOCIAL_CONNECT_ALLOW_REDIRECT': '/profile',
-    'SOCIAL_CONNECT_DENY_REDIRECT':  '/profile',
-    'SOCIAL_FLASH_MESSAGES':         True
+    'SOCIAL_CONNECT_DENY_REDIRECT': '/profile',
+    'SOCIAL_FLASH_MESSAGES': True,
+    'SOCIAL_POST_OAUTH_CONNECT_SESSION_KEY': 'post_oauth_connect_url',
+    'SOCIAL_POST_OAUTH_LOGIN_SESSION_KEY': 'post_oauth_login_url'
 }
 
 default_provider_config = {
@@ -180,8 +179,9 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
         user = current_app.security.datastore.with_id(connection.user_id)
 
         if login_user(user):
-            redirect_url = session.pop(POST_OAUTH_LOGIN_SESSION_KEY,
-                                       get_post_login_redirect())
+            key = config_value('POST_OAUTH_LOGIN_SESSION_KEY')
+            redirect_url = session.pop(key, get_post_login_redirect())
+
             current_app.logger.debug('User logged in via %s. Redirecting to '
                                      '%s' % (display_name, redirect_url))
             social_login_completed.send(current_app._get_current_object(),
@@ -245,7 +245,7 @@ def _connect_handler(cv, user_id=None):
         do_flash("Could not make connection to %s. "
               "Please try again later." % display_name, 'error')
 
-    redirect_url = session.pop(POST_OAUTH_CONNECT_SESSION_KEY,
+    redirect_url = session.pop(config_value('POST_OAUTH_CONNECT_SESSION_KEY'),
                                config_value('CONNECT_ALLOW_REDIRECT'))
     return redirect(redirect_url)
 
@@ -850,8 +850,8 @@ class Social(object):
                 'Callback URL = %(callback_url)s' % ctx)
 
             allow_view = config_value('CONNECT_ALLOW_REDIRECT')
-            post_connect = request.form.get('next', allow_view)
-            session[POST_OAUTH_CONNECT_SESSION_KEY] = post_connect
+            pc = request.form.get('next', allow_view)
+            session[config_value('POST_OAUTH_CONNECT_SESSION_KEY')] = pc
 
             return get_remote_app(provider_id).authorize(callback_url)
 
@@ -937,11 +937,3 @@ class Social(object):
 
     def __getattr__(self, name):
         return self.providers.get(name, None)
-
-
-# Signals
-social_connection_created = _signals.signal("connection-created")
-social_connection_failed = _signals.signal("connection-failed")
-social_connection_removed = _signals.signal("connection-removed")
-social_login_failed = _signals.signal("login-failed")
-social_login_completed = _signals.signal("login-success")
