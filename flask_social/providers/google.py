@@ -9,7 +9,6 @@ from flask_social.core import ConnectionFactory, ConnectHandler, LoginHandler
 
 
 default_config = {
-
     'id': 'google',
     'display_name': 'Google',
     'install': 'pip install google-api-python-client',
