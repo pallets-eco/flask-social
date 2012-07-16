@@ -134,16 +134,32 @@ index::
 
     # ... other required imports ...
     from flask.ext.social import Social
-    from flask.ext.social.datastore.sqlalchemy import SQLAlchemyConnectionDatastore
+    from flask.ext.social.datastore import SQLAlchemyConnectionDatastore
     
     # ... create the app ...
     
     app.config['SECURITY_POST_LOGIN'] = '/profile'
     
     db = SQLAlchemy(app)
-    Security(app, SQLAlchemyUserDatastore(db))
-    Social(app, SQLAlchemyConnectionDatastore(db))
+
+    # ... define user and role models ...
+
+    class Connection(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+        provider_id = db.Column(db.String(255))
+        provider_user_id = db.Column(db.String(255))
+        access_token = db.Column(db.String(255))
+        secret = db.Column(db.String(255))
+        display_name = db.Column(db.String(255))
+        profile_url = db.Column(db.String(512))
+        image_url = db.Column(db.String(512))
+        rank = db.Column(db.Integer)
+
+    Security(app, SQLAlchemyUserDatastore(db, User, Role))
+    Social(app, SQLAlchemyConnectionDatastore(db, Connection))
     
+
 Connecting to Providers
 -----------------------
 
@@ -153,10 +169,14 @@ add a mechanism on the profile page to do so. First the view method::
     @app.route('/profile')
     @login_required
     def profile():
-        return render_template('profile.html', content='Profile Page',
-                twitter_conn=current_app.social.twitter.get_connection(),
-                facebook_conn=current_app.social.facebook.get_connection(),
-                foursquare_conn=current_app.social.foursquare.get_connection())
+        s = current_app.social
+        
+        return render_template(
+            'profile.html', 
+            content='Profile Page',
+            twitter_conn=s.twitter.get_connection(),
+            facebook_conn=s.facebook.get_connection(),
+            foursquare_conn=s.foursquare.get_connection())
                 
 You should notice the mechanism for retreiving the current user's connection 
 with each service provider. If a connection is not found, the value will be 
@@ -224,17 +244,19 @@ logged in without having to enter their username or password.
 Configuration Values
 ====================
 
-* :attr:`SOCIAL_URL_PREFIX`: Specifies the URL prefix for the Social blueprint
+* :attr:`SOCIAL_URL_PREFIX`: Specifies the URL prefix for the Social blueprint.
 * :attr:`SOCIAL_APP_URL`: The URL your application is registered under with a
   service provider.
-* :attr:`SOCIAL_CONNECTION_DATASTORE`: Specifies the property name to use for 
-  the connection datastore on the application instance
 * :attr:`SOCIAL_CONNECT_ALLOW_REDIRECT`: The URL to redirect to after a user 
-  successfully authorizes a connection with a service provider
+  successfully authorizes a connection with a service provider.
 * :attr:`SOCIAL_CONNECT_DENY_REDIRECT`: The URL to redirect to when a user 
-  denies the connection request with a service provider
+  denies the connection request with a service provider.
 * :attr:`SOCIAL_FLASH_MESSAGES`: Specifies wether or not to flash messages 
-  during connection and login requests
+  during connection and login requests.
+* :attr:`SOCIAL_POST_OAUTH_CONNECT_SESSION_KEY`: Specifies the session key to 
+  use when looking for a redirect value after a connection is made.
+* :attr:`SOCIAL_POST_OAUTH_LOGIN_SESSION_KEY`: Specifis the session key to use 
+  when looking for a redirect value after a login is completed.
 
 
 .. _api:
@@ -242,92 +264,63 @@ Configuration Values
 API
 ===
 
-.. autoclass:: flask_social.Social
+.. autoclass:: flask_social.core.Social
     :members:
     
-Models
-------
-.. autoclass:: flask_social.Connection
-
-    .. attribute:: user_id
-    
-       Local user ID
-       
-    .. attribute:: provider_id
-    
-       Provider ID which is a lowercase string of the provider name
-       
-    .. attribute:: provider_user_id
-    
-       The provider's user ID
-       
-    .. attribute:: access_token
-    
-       The access token from the provider received upon authorization 
-       
-    .. attribute:: secret
-    
-       The secret from the provider received upon authorization
-       
-    .. attribute:: display_name
-    
-       The display name or username of the provider's user
-       
-    .. attribute:: profile_url
-    
-       The URL of the user's profile at the provider
-       
-    .. attribute:: image_url
-    
-       The URL of the user's profile image
        
 Factories
 ---------
 
-.. autoclass:: flask_social.ConnectionFactory
+.. autoclass:: flask_social.core.ConnectionFactory
     :members:
     
-.. autoclass:: flask_social.FacebookConnectionFactory
+.. autoclass:: flask_social.providers.facebook.FacebookConnectionFactory
     :members:
     
-.. autoclass:: flask_social.TwitterConnectionFactory
+.. autoclass:: flask_social.providers.twitter.TwitterConnectionFactory
     :members:
 
-.. autoclass:: flask_social.FoursquareConnectionFactory
+.. autoclass:: flask_social.providers.foursquare.FoursquareConnectionFactory
     :members:
+
     
-OAuth Handlers
+Login Handlers
 --------------
 
-.. autoclass:: flask_social.LoginHandler
+.. autoclass:: flask_social.core.LoginHandler
     :members:
     
-.. autoclass:: flask_social.FacebookLoginHandler
+.. autoclass:: flask_social.providers.facebook.FacebookLoginHandler
     :members:
     
-.. autoclass:: flask_social.TwitterLoginHandler
+.. autoclass:: flask_social.providers.twitter.TwitterLoginHandler
     :members:
 
-.. autoclass:: flask_social.FoursquareLoginHandler
-    :members:
-    
-.. autoclass:: flask_social.ConnectHandler
-    :members:
-    
-.. autoclass:: flask_social.FacebookConnectHandler
-    :members:
-    
-.. autoclass:: flask_social.TwitterConnectHandler
+.. autoclass:: flask_social.providers.foursquare.FoursquareLoginHandler
     :members:
 
-.. autoclass:: flask_social.FoursquareConnectHandler
+
+Connect Handlers
+----------------
+    
+.. autoclass:: flask_social.core.ConnectHandler
     :members:
     
+.. autoclass:: flask_social.providers.facebook.FacebookConnectHandler
+    :members:
+    
+.. autoclass:: flask_social.providers.twitter.TwitterConnectHandler
+    :members:
+
+.. autoclass:: flask_social.providers.foursquare.FoursquareConnectHandler
+    :members:
+
+
 Exceptions
 ----------    
-.. autoexception:: flask_social.ConnectionExistsError
+.. autoexception:: flask_social.exceptions.ConnectionExistsError
 
-.. autoexception:: flask_social.ConnectionNotFoundError
+.. autoexception:: flask_social.exceptions.ConnectionNotFoundError
 
 
 .. _signals:

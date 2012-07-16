@@ -11,3 +11,6 @@
 """
 
 from .core import Social
+
+from .datastore import SQLAlchemyConnectionDatastore, \
+     MongoEngineConnectionDatastore
