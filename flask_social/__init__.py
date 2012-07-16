@@ -21,11 +21,19 @@ except ImportError:
     pass
 
 try:
+    import httplib2
+    import oauth2client.client as googleoauth
+    import apiclient.discovery as googleapi
+except ImportError:
+    pass
+
+try:
     import foursquare
 except ImportError:
     pass
 
 from importlib import import_module
+import os
 
 from flask import Blueprint, redirect, flash, session, request, current_app
 from flask.signals import Namespace
@@ -83,6 +91,27 @@ default_provider_config = {
             'access_token_url': '/oauth/access_token',
             'authorize_url': 'https://www.facebook.com/dialog/oauth',
         },
+    },
+    'google': {
+        'id': 'google',
+        'display_name': 'Google',
+        'install': 'pip install google-api-python-client',
+        'login_handler': 'flask.ext.social::GoogleLoginHandler',
+        'connect_handler': 'flask.ext.social::GoogleConnectHandler',
+        'connection_factory': 'flask.ext.social::GoogleConnectionFactory',
+        'oauth': {
+            'base_url': 'https://www.google.com/accounts/',
+            'authorize_url': 'https://accounts.google.com/o/oauth2/auth',
+            'access_token_url': 'https://accounts.google.com/o/oauth2/token',
+            'access_token_method': 'POST',
+            'access_token_params': {
+                'grant_type': 'authorization_code'
+            },
+            'request_token_url': None,
+            'request_token_params': {
+                'response_type': 'code'
+            },
+        }
     },
     'foursquare': {
         'id': 'foursquare',
@@ -337,7 +366,7 @@ class FacebookConnectionFactory(ConnectionFactory):
 class TwitterConnectionFactory(ConnectionFactory):
     """The `TwitterConnectionFactory` class creates `Connection` instances for
     accounts connected to Twitter. The API instance for Twitter connections
-    are instance of the `python-twitter library <http://code.google.com/p/python-twitter/>`_
+    are instances of the `python-twitter library <http://code.google.com/p/python-twitter/>`_
     """
     def __init__(self, consumer_key, consumer_secret, **kwargs):
         super(TwitterConnectionFactory, self).__init__('twitter')
@@ -351,10 +380,31 @@ class TwitterConnectionFactory(ConnectionFactory):
                            access_token_secret=getattr(connection, 'secret'))
 
 
+class GoogleConnectionFactory(ConnectionFactory):
+    """The `GoogleConnectionFactory` class creates `Connection` instances for
+    accounts connected to google. The API instance for google connections
+    are instances of the `google library <http://code.google.com/p/google-api-python-client/>`_
+    """
+    def __init__(self, consumer_key, consumer_secret, **kwargs):
+        super(GoogleConnectionFactory, self).__init__('google')
+        self.consumer_key = consumer_key
+        self.consumer_secret = consumer_secret
+
+    def _create_api(self, connection):
+        credentials = googleoauth.AccessTokenCredentials(
+            access_token=getattr(connection, 'access_token'),
+            user_agent=''
+        )
+
+        http = httplib2.Http()
+        http = credentials.authorize(http)
+        return googleapi.build('plus', 'v1', http=http)
+
+
 class FoursquareConnectionFactory(ConnectionFactory):
     """The `FoursquareConnectionFactory` class creates `Connection` instances for
     accounts connected to foursquare. The API instance for foursquare connections
-    are instance of the `foursquare library <https://github.com/mLewisLogic/foursquare/>`_
+    are instances of the `foursquare library <https://github.com/mLewisLogic/foursquare/>`_
     """
     def __init__(self, consumer_key, consumer_secret, **kwargs):
         super(FoursquareConnectionFactory, self).__init__('foursquare')
@@ -429,6 +479,29 @@ class FacebookLoginHandler(LoginHandler):
         if response:
             graph = facebook.GraphAPI(response['access_token'])
             profile = graph.get_object("me")
+            return profile['id']
+        return None
+
+
+class GoogleLoginHandler(LoginHandler):
+    """The `GoogleLoginHandler` class handles the authorization response from
+    google. The google account's user ID is not passed in the response,
+    thus it must be retrieved with an API call.
+    """
+    def __init__(self, **kwargs):
+        super(GoogleLoginHandler, self).__init__('google')
+
+    def get_provider_user_id(self, response):
+        if response:
+            credentials = googleoauth.AccessTokenCredentials(
+                access_token=response['access_token'],
+                user_agent=''
+            )
+
+            http = httplib2.Http()
+            http = credentials.authorize(http)
+            api = googleapi.build('plus', 'v1', http=http)
+            profile = api.people().get(userId='me').execute()
             return profile['id']
         return None
 
@@ -535,6 +608,42 @@ class FacebookConnectHandler(ConnectHandler):
             display_name=profile['username'],
             profile_url=profile_url,
             image_url=image_url
+        )
+
+
+class GoogleConnectHandler(ConnectHandler):
+    """The `GoogleConnectHandler` class handles the connection procedure
+    after a user authorizes a connection from google. The google acount's
+    user ID is retrieved via an API call, otherwise the token is provided by
+    the response from google.
+    """
+    def __init__(self, **kwargs):
+        super(GoogleConnectHandler, self).__init__('google')
+
+    def get_connection_values(self, response):
+        if not response:
+            return None
+
+        access_token = response['access_token']
+
+        credentials = googleoauth.AccessTokenCredentials(
+            access_token=access_token,
+            user_agent=''
+        )
+
+        http = httplib2.Http()
+        http = credentials.authorize(http)
+        api = googleapi.build('plus', 'v1', http=http)
+        profile = api.people().get(userId='me').execute()
+
+        return dict(
+            provider_id=self.provider_id,
+            provider_user_id=profile['id'],
+            access_token=access_token,
+            secret=None,
+            display_name=profile['displayName'],
+            profile_url=profile['url'],
+            image_url=profile['image']['url']
         )
 
 
@@ -763,7 +872,7 @@ class Social(object):
             specified provider
             """
             display_name = get_display_name(provider_id)
-            ctx = dict(provider=display_name,  user=current_user)
+            ctx = dict(provider=display_name, user=current_user)
 
             try:
                 current_app.social.datastore.remove_all_connections(
