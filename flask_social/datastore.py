@@ -9,7 +9,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
-from flask.ext import social
+from flask_social import exceptions
 
 
 class ConnectionDatastore(object):
@@ -25,7 +25,7 @@ class ConnectionDatastore(object):
 
     def _do_get(self, rv):
         if rv is None:
-            raise social.ConnectionNotFoundError()
+            raise exceptions.ConnectionNotFoundError()
         return  rv
 
     def _save_model(self, model, **kwargs):
@@ -116,8 +116,9 @@ class ConnectionDatastore(object):
             self.get_connection(kwargs['user_id'],
                                 kwargs['provider_id'],
                                 kwargs['provider_user_id'])
-            raise social.ConnectionExistsError()
-        except social.ConnectionNotFoundError:
+            raise exceptions.ConnectionExistsError()
+
+        except exceptions.ConnectionNotFoundError:
             return self._save_model(self.connection_model(**kwargs))
 
 

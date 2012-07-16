@@ -10,14 +10,14 @@
   {{ form.submit }}
 </form>
 
-<form action="{{ url_for('social.login', provider_id='twitter') }}" name='twitter_login_form' method="POST">
+<form action="{{ url_for('flask_social.login', provider_id='twitter') }}" name='twitter_login_form' method="POST">
   <input type="submit" name="login_twitter" value="Login with Twitter" />
 </form>
 
-<form action="{{ url_for('social.login', provider_id='facebook') }}" name='facebook_login_form' method="POST">
+<form action="{{ url_for('flask_social.login', provider_id='facebook') }}" name='facebook_login_form' method="POST">
   <input type="submit" name="login_facebook" value="Login with Facebook" />
 </form>
 
-<form action="{{ url_for('social.login', provider_id='foursquare') }}" name='foursquare_login_form' method="POST">
+<form action="{{ url_for('flask_social.login', provider_id='foursquare') }}" name='foursquare_login_form' method="POST">
   <input type="submit" name="login_foursquare" value="Login with foursquare" />
 </form>

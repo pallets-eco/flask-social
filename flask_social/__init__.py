@@ -37,9 +37,11 @@ from flask.ext.security import current_user, login_user, login_required
 from flask.ext.security.utils import get_post_login_redirect
 from flask.ext.oauth import OAuth
 
-from .signals import social_connection_removed, social_login_completed, \
+from flask_social.signals import social_connection_removed, social_login_completed, \
      social_login_failed, social_connection_created, social_connection_failed
-from .utils import get_class_from_string, do_flash, config_value
+from flask_social.utils import get_class_from_string, do_flash, config_value, \
+     get_display_name, get_authorize_callback, get_remote_app
+from flask_social import exceptions, views
 
 
 default_config = {
@@ -125,44 +127,6 @@ default_provider_config = {
 }
 
 
-def get_display_name(provider_id):
-    """Get the display name of the provider
-
-    param: provider_id: The provider ID
-    param: config: The option config context
-    """
-    config = current_app.config['SOCIAL_%s' % provider_id.upper()]
-    return config['display_name']
-
-
-def get_authorize_callback(endpoint):
-    """Get a qualified URL for the provider to return to upon authorization
-
-    param: endpoint: Absolute path to append to the application's host
-    """
-    return '%s%s' % (config_value('APP_URL'), endpoint)
-
-
-def get_remote_app(provider_id):
-    """Get the configured instance of the provider API
-
-    param: provider_id: The ID of the provider to retrive
-    """
-    return getattr(current_app.social, provider_id)
-
-
-class ConnectionNotFoundError(Exception):
-    """Raised whenever there is an attempt to find a connection and the
-    connection is unable to be found
-    """
-
-
-class ConnectionExistsError(Exception):
-    """Raised whenever there is an attempt to save a connection and the
-    connection already exists
-    """
-
-
 def _login_handler(provider_id, provider_user_id, oauth_response):
     """Shared method to handle the signin process"""
 
@@ -193,7 +157,7 @@ def _login_handler(provider_id, provider_user_id, oauth_response):
                                     'login via %s.' % display_name)
             do_flash("Inactive user", "error")
 
-    except ConnectionNotFoundError:
+    except exceptions.ConnectionNotFoundError:
         current_app.logger.info('Login attempt via %s failed because '
                                 'connection was not found.' % display_name)
 
@@ -230,7 +194,7 @@ def _connect_handler(cv, user_id=None):
                                        connection=connection)
         do_flash("Connection established to %s" % display_name, 'success')
 
-    except ConnectionExistsError, e:
+    except exceptions.ConnectionExistsError, e:
         current_app.logger.debug('Connection to %s exists already '
                                  'for %s' % (display_name, current_user))
         do_flash("A connection is already established with %s "
@@ -337,7 +301,7 @@ class ConnectionFactory(object):
     def __call__(self, **kwargs):
         try:
             return self.get_connection(**kwargs)
-        except ConnectionNotFoundError:
+        except exceptions.ConnectionNotFoundError:
             return None
 
 
@@ -786,7 +750,6 @@ class Social(object):
         """
         app.social = self
         self.datastore = datastore
-        blueprint = Blueprint('social', __name__)
 
         for key, value in default_config.items():
             app.config.setdefault(key, value)
@@ -818,119 +781,15 @@ class Social(object):
 
         self.oauth = OAuth()
 
-        @blueprint.route('/login/<provider_id>', methods=['POST'])
-        def login(provider_id):
-            """Starts the provider login OAuth flow"""
-            if current_user.is_authenticated():
-                return redirect(request.referrer or '/')
-
-            callback_url = get_authorize_callback('/login/%s' % provider_id)
-            display_name = get_display_name(provider_id)
-
-            current_app.logger.debug('Starting login via %s account. Callback '
-                'URL = %s' % (display_name, callback_url))
-
-            post_login = request.form.get('next', get_post_login_redirect())
-            session['post_oauth_login_url'] = post_login
-
-            return get_remote_app(provider_id).authorize(callback_url)
-
-        @blueprint.route('/connect/<provider_id>', methods=['POST'])
-        @login_required
-        def connect(provider_id):
-            """Starts the provider connection OAuth flow"""
-            callback_url = get_authorize_callback('/connect/%s' % provider_id)
-
-            ctx = dict(display_name=get_display_name(provider_id),
-                       current_user=current_user,
-                       callback_url=callback_url)
-
-            current_app.logger.debug('Starting process of connecting '
-                '%(display_name)s account to user account %(current_user)s. '
-                'Callback URL = %(callback_url)s' % ctx)
-
-            allow_view = config_value('CONNECT_ALLOW_REDIRECT')
-            pc = request.form.get('next', allow_view)
-            session[config_value('POST_OAUTH_CONNECT_SESSION_KEY')] = pc
-
-            return get_remote_app(provider_id).authorize(callback_url)
-
-        @blueprint.route('/connect/<provider_id>', methods=['DELETE'])
-        @login_required
-        def remove_all_connections(provider_id):
-            """Remove all connections for the authenticated user to the
-            specified provider
-            """
-            display_name = get_display_name(provider_id)
-            ctx = dict(provider=display_name, user=current_user)
-
-            try:
-                current_app.social.datastore.remove_all_connections(
-                    current_user.get_id(), provider_id)
-
-                social_connection_removed.send(
-                    current_app._get_current_object(),
-                    user=current_user._get_current_object(),
-                    provider_id=provider_id)
-
-                current_app.logger.debug('Removed all connections to '
-                                         '%(provider)s for %(user)s' % ctx)
-
-                do_flash("All connections to %s removed" % display_name, 'info')
-            except:
-                current_app.logger.error('Unable to remove all connections to '
-                                         '%(provider)s for %(user)s' % ctx)
-
-                msg = "Unable to remove connection to %(provider)s" % ctx
-                do_flash(msg, 'error')
-
-            return redirect(request.referrer)
-
-        @blueprint.route('/connect/<provider_id>/<provider_user_id>',
-                         methods=['DELETE'])
-        @login_required
-        def remove_connection(provider_id, provider_user_id):
-            """Remove a specific connection for the authenticated user to the
-            specified provider
-            """
-            display_name = get_display_name(provider_id)
-            ctx = dict(provider=display_name,
-                       user=current_user,
-                       provider_user_id=provider_user_id)
-
-            try:
-                current_app.social.datastore.remove_connection(
-                    current_user.get_id(),
-                    provider_id,
-                    provider_user_id)
-
-                social_connection_removed.send(
-                    current_app._get_current_object(),
-                    user=current_user._get_current_object(),
-                    provider_id=provider_id)
-
-                current_app.logger.debug('Removed connection to %(provider)s '
-                    'account %(provider_user_id)s for %(user)s' % ctx)
-
-                do_flash("Connection to %(provider)s removed" % ctx, 'info')
-
-            except ConnectionNotFoundError:
-                current_app.logger.error(
-                    'Unable to remove connection to %(provider)s account '
-                    '%(provider_user_id)s for %(user)s' % ctx)
-
-                do_flash("Unabled to remove connection to %(provider)s" % ctx,
-                      'error')
-
-            return redirect(request.referrer)
-
-        url_prefix = config_value('URL_PREFIX', app=app)
-
         # Configure the URL handlers for each fo the configured providers
+        url_prefix = config_value('URL_PREFIX', app=app)
+        blueprint = views.create_blueprint(app, 'flask_social', __name__,
+                                           url_prefix=url_prefix)
+
         for provider_config in provider_configs:
             _configure_provider(app, blueprint, self.oauth, provider_config)
 
-        app.register_blueprint(blueprint, url_prefix=url_prefix)
+        app.register_blueprint(blueprint)
 
     def register_provider(self, name, provider):
         self.providers[name] = provider

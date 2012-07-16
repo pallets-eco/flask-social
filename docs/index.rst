@@ -164,11 +164,11 @@ with each service provider. If a connection is not found, the value will be
 
     {% macro show_provider_button(provider_id, display_name, conn) %}
         {% if conn %}
-        <form action="{{ url_for('social.remove_connection', provider_id=conn.provider_id, provider_user_id=conn.provider_user_id) }}" method="DELETE">
+        <form action="{{ url_for('flask_social.remove_connection', provider_id=conn.provider_id, provider_user_id=conn.provider_user_id) }}" method="DELETE">
           <input type="submit" value="Disconnect {{ display_name }}" />
         </form>
         {% else %}
-        <form action="{{ url_for('social.connect', provider_id=provider_id) }}" method="POST">
+        <form action="{{ url_for('flask_social.connect', provider_id=provider_id) }}" method="POST">
           <input type="submit" value="Connect {{ display_name }}" />
         </form>
         {% endif %}
@@ -202,7 +202,7 @@ for them to login via the provider. A login form would look like the following::
     </form>
     
     {% macro social_login(provider_id, display_name) %}
-      <form action="{{ url_for('social.login', provider_id=provider_id) }}" method="POST">
+      <form action="{{ url_for('flask_social.login', provider_id=provider_id) }}" method="POST">
         <input type="submit" value="Login with {{ display_name }}" />
       </form>
     {% endmacro %}
