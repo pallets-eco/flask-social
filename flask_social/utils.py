@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+    flask.ext.social.utils
+    ~~~~~~~~~~~~~~~~~~~~~~
+
+    This module contains the Flask-Social utils
+
+    :copyright: (c) 2012 by Matt Wright.
+    :license: MIT, see LICENSE for more details.
+"""
 
 import os
 import pkgutil

@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+    flask.ext.social.signals
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This module contains the Flask-Social signals
+
+    :copyright: (c) 2012 by Matt Wright.
+    :license: MIT, see LICENSE for more details.
+"""
 
 import blinker
 

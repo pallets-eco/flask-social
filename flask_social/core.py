@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+    flask.ext.social.core
+    ~~~~~~~~~~~~~~~~~~~~~
+
+    This module contains the Flask-Social core
+
+    :copyright: (c) 2012 by Matt Wright.
+    :license: MIT, see LICENSE for more details.
+"""
 
 from flask import current_app, redirect
 from flask.ext.security import current_user

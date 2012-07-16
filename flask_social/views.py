@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+    flask.ext.social.views
+    ~~~~~~~~~~~~~~~~~~~~~~
+
+    This module contains the Flask-Social views
+
+    :copyright: (c) 2012 by Matt Wright.
+    :license: MIT, see LICENSE for more details.
+"""
 
 from flask import Blueprint, current_app, redirect, request, session
 from flask.ext.security import current_user, login_required, login_user
