@@ -10,8 +10,9 @@
 """
 
 from flask import Blueprint, current_app, redirect, request, session
-from flask.ext.security import current_user, login_required, login_user
+from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect
+from flask.ext.security.views import _do_login as login_user
 from werkzeug.local import LocalProxy
 
 from flask_social import exceptions
@@ -97,6 +98,7 @@ def configure_provider(app, blueprint, oauth, config):
 
 def login(provider_id):
     """Starts the provider login OAuth flow"""
+
     if current_user.is_authenticated():
         return redirect(request.referrer or '/')
 
@@ -104,7 +106,7 @@ def login(provider_id):
     display_name = get_display_name(provider_id)
 
     _logger.debug('Starting login via %s account. Callback '
-        'URL = %s' % (display_name, callback_url))
+                  'URL = %s' % (display_name, callback_url))
 
     post_login = request.form.get('next', get_post_login_redirect())
     session['post_oauth_login_url'] = post_login
@@ -116,15 +118,16 @@ def login_handler(provider_id, provider_user_id, oauth_response):
     """Shared method to handle the signin process"""
 
     if current_user.is_authenticated():
-        return redirect("/")
+        return redirect('/')
 
     display_name = get_display_name(provider_id)
 
     _logger.debug('Attempting login via %s with provider user '
-                     '%s' % (display_name, provider_user_id))
+                  '%s' % (display_name, provider_user_id))
+
     try:
-        connection = _datastore.get_connection_by_provider_user_id(
-                        provider_id, provider_user_id)
+        fn = _datastore.get_connection_by_provider_user_id
+        connection = fn(provider_id, provider_user_id)
 
         user = _security.datastore.with_id(connection.user_id)
 
@@ -133,26 +136,30 @@ def login_handler(provider_id, provider_user_id, oauth_response):
             redirect_url = session.pop(key, get_post_login_redirect())
 
             _logger.debug('User logged in via %s. Redirecting to '
-                                     '%s' % (display_name, redirect_url))
+                          '%s' % (display_name, redirect_url))
+
             social_login_completed.send(current_app._get_current_object(),
                                         provider_id=provider_id, user=user)
+
             return redirect(redirect_url)
 
         else:
             _logger.info('Inactive local user attempted '
-                                    'login via %s.' % display_name)
-            do_flash("Inactive user", "error")
+                         'login via %s.' % display_name)
+
+            do_flash('Inactive user", "error')
 
     except exceptions.ConnectionNotFoundError:
         _logger.info('Login attempt via %s failed because '
-                                'connection was not found.' % display_name)
+                     'connection was not found.' % display_name)
 
         msg = '%s account not associated with an existing user' % display_name
+
         do_flash(msg, 'error')
 
     except Exception, e:
         _logger.error('Unexpected error signing in '
-                                 'via %s: %s' % (display_name, e))
+                      'via %s: %s' % (display_name, e))
 
     social_login_failed.send(current_app._get_current_object(),
                              provider_id=provider_id,
@@ -170,8 +177,8 @@ def connect(provider_id):
                callback_url=callback_url)
 
     _logger.debug('Starting process of connecting '
-        '%(display_name)s account to user account %(current_user)s. '
-        'Callback URL = %(callback_url)s' % ctx)
+                  '%(display_name)s account to user account %(current_user)s. '
+                  'Callback URL = %(callback_url)s' % ctx)
 
     allow_view = config_value('CONNECT_ALLOW_REDIRECT')
     pc = request.form.get('next', allow_view)
@@ -192,30 +199,37 @@ def connect_handler(cv, user_id=None):
 
     try:
         connection = _datastore.save_connection(**cv)
+
         _logger.debug('Connection to %s established '
-                                 'for %s' % (display_name, current_user))
+                      'for %s' % (display_name, current_user))
+
         social_connection_created.send(current_app._get_current_object(),
                                        user=current_user._get_current_object(),
                                        connection=connection)
-        do_flash("Connection established to %s" % display_name, 'success')
+
+        do_flash('Connection established to %s' % display_name, 'success')
 
     except exceptions.ConnectionExistsError, e:
         _logger.debug('Connection to %s exists already '
-                                 'for %s' % (display_name, current_user))
-        do_flash("A connection is already established with %s "
-              "to your account" % display_name, 'notice')
+                      'for %s' % (display_name, current_user))
+
+        do_flash('A connection is already established with %s '
+                 'to your account' % display_name, 'notice')
 
     except Exception, e:
         _logger.error('Unexpected error connecting %s account for '
-                                 'user. Reason: %s' % (display_name, e))
+                      'user. Reason: %s' % (display_name, e))
+
         social_connection_failed.send(current_app._get_current_object(),
                                       user=current_user._get_current_object(),
                                       error=e)
-        do_flash("Could not make connection to %s. "
-              "Please try again later." % display_name, 'error')
+
+        do_flash('Could not make connection to %s. '
+                 'Please try again later.' % display_name, 'error')
 
     redirect_url = session.pop(config_value('POST_OAUTH_CONNECT_SESSION_KEY'),
                                config_value('CONNECT_ALLOW_REDIRECT'))
+
     return redirect(redirect_url)
 
 
@@ -224,26 +238,27 @@ def remove_all_connections(provider_id):
     specified provider
     """
     display_name = get_display_name(provider_id)
+
     ctx = dict(provider=display_name, user=current_user)
 
     try:
-        _datastore.remove_all_connections(
-            current_user.get_id(), provider_id)
+        _datastore.remove_all_connections(current_user.get_id(), provider_id)
 
-        social_connection_removed.send(
-            current_app._get_current_object(),
-            user=current_user._get_current_object(),
-            provider_id=provider_id)
+        social_connection_removed.send(current_app._get_current_object(),
+                                       user=current_user._get_current_object(),
+                                       provider_id=provider_id)
 
         _logger.debug('Removed all connections to '
-                                 '%(provider)s for %(user)s' % ctx)
+                      '%(provider)s for %(user)s' % ctx)
 
-        do_flash("All connections to %s removed" % display_name, 'info')
+        do_flash('All connections to %s removed' % display_name, 'info')
+
     except:
         _logger.error('Unable to remove all connections to '
-                                 '%(provider)s for %(user)s' % ctx)
+                      '%(provider)s for %(user)s' % ctx)
 
-        msg = "Unable to remove connection to %(provider)s" % ctx
+        msg = 'Unable to remove connection to %(provider)s' % ctx
+
         do_flash(msg, 'error')
 
     return redirect(request.referrer)
@@ -254,33 +269,29 @@ def remove_connection(provider_id, provider_user_id):
     specified provider
     """
     display_name = get_display_name(provider_id)
+
     ctx = dict(provider=display_name,
                user=current_user,
                provider_user_id=provider_user_id)
 
     try:
-        _datastore.remove_connection(
-            current_user.get_id(),
-            provider_id,
-            provider_user_id)
+        _datastore.remove_connection(current_user.get_id(),
+                                     provider_id, provider_user_id)
 
-        social_connection_removed.send(
-            current_app._get_current_object(),
-            user=current_user._get_current_object(),
-            provider_id=provider_id)
+        social_connection_removed.send(current_app._get_current_object(),
+                                       user=current_user._get_current_object(),
+                                       provider_id=provider_id)
 
         _logger.debug('Removed connection to %(provider)s '
-            'account %(provider_user_id)s for %(user)s' % ctx)
+                      'account %(provider_user_id)s for %(user)s' % ctx)
 
-        do_flash("Connection to %(provider)s removed" % ctx, 'info')
+        do_flash('Connection to %(provider)s removed' % ctx, 'info')
 
     except exceptions.ConnectionNotFoundError:
-        _logger.error(
-            'Unable to remove connection to %(provider)s account '
-            '%(provider_user_id)s for %(user)s' % ctx)
+        _logger.error('Unable to remove connection to %(provider)s account '
+                      '%(provider_user_id)s for %(user)s' % ctx)
 
-        do_flash("Unabled to remove connection to %(provider)s" % ctx,
-              'error')
+        do_flash('Unabled to remove connection to %(provider)s' % ctx, 'error')
 
     return redirect(request.referrer)
 

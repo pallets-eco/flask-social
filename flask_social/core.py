@@ -94,7 +94,7 @@ class ConnectionFactory(object):
             self.provider_id, provider_user_id)
 
     def _create_api(self, connection):
-        raise NotImplementedError("create_api method not implemented")
+        raise NotImplementedError('create_api method not implemented')
 
     def get_connection(self, user_id=None, provider_user_id=None):
         """Get a connection to the provider for the specified local user
@@ -150,17 +150,17 @@ class LoginHandler(OAuthHandler):
         """Gets the provider user ID from the OAuth reponse.
         :param response: The OAuth response in the form of a dictionary
         """
-        raise NotImplementedError("get_provider_user_id")
+        raise NotImplementedError('get_provider_user_id')
 
     def __call__(self, response):
         display_name = get_display_name(self.provider_id)
 
         _logger.debug('Received login response from '
-                                 '%s: %s' % (display_name, response))
+                      '%s: %s' % (display_name, response))
 
         if response is None:
-            do_flash("Access was denied to your %s "
-                     "account" % display_name, 'error')
+            do_flash('Access was denied to your %s '
+                     'account' % display_name, 'error')
 
             return redirect(_security.login_manager.login_view)
 
@@ -181,16 +181,17 @@ class ConnectHandler(OAuthHandler):
 
         :param response: The OAuth response as a dictionary of values
         """
-        raise NotImplementedError("get_connection_values")
+        raise NotImplementedError('get_connection_values')
 
     def __call__(self, response, user_id=None):
         display_name = get_display_name(self.provider_id)
 
         _logger.debug('Received connect response from '
-                                 '%s. %s' % (display_name, response))
+                      '%s. %s' % (display_name, response))
 
         if response is None:
-            do_flash("Access was denied by %s" % display_name, 'error')
+            do_flash('Access was denied by %s' % display_name, 'error')
+
             return redirect(config_value('CONNECT_DENY_REDIRECT'))
 
         cv = self.get_connection_values(response)
