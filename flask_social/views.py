@@ -16,12 +16,11 @@ from flask.ext.security.views import _do_login as login_user
 from werkzeug.local import LocalProxy
 
 from flask_social import exceptions
-from flask_social.core import Provider
 from flask_social.signals import social_connection_removed, \
      social_connection_created, social_connection_failed, \
      social_login_completed, social_login_failed
 from flask_social.utils import do_flash, config_value, get_display_name, \
-     get_authorize_callback, get_remote_app, get_class_from_string
+     get_authorize_callback, get_remote_app
 
 
 # Convenient references
@@ -32,68 +31,6 @@ _social = LocalProxy(lambda: current_app.extensions['social'])
 _datastore = LocalProxy(lambda: _social.datastore)
 
 _logger = LocalProxy(lambda: current_app.logger)
-
-
-def configure_provider(app, blueprint, oauth, config):
-    """
-    Configures and registers a service provider connection Factory with the
-    main application. The connection factory is accessible via:
-
-        from flask import current_app as app
-        app.social.<provider_id>
-    """
-    provider_id = config['id']
-    o_config = config['oauth']
-
-    try:
-        o_config['consumer_key']
-        o_config['consumer_secret']
-    except KeyError:
-        raise Exception('consumer_key and/or consumer_secret not found '
-                        'for provider %s' % config['display_name'])
-
-    remote_app = oauth.remote_app(provider_id, **o_config)
-
-    def get_handler(clazz_name, config, callback):
-        return get_class_from_string(clazz_name)(callback=callback, **config)
-
-    cf_class_name = config['connection_factory']
-    ConnectionFactoryClass = get_class_from_string(cf_class_name)
-
-    cf = ConnectionFactoryClass(**o_config)
-    lh = get_handler(config['login_handler'], o_config, login_handler)
-    ch = get_handler(config['connect_handler'], o_config, connect_handler)
-
-    service_provider = Provider(remote_app, cf, lh, ch)
-
-    @service_provider.tokengetter
-    def get_token():
-        # Social doesn't use the builtin remote method calls feature of the
-        # Flask-OAuth extension so we don't need to return a token. This does,
-        # however, need to be configured
-        return None
-
-    @blueprint.route('/connect/%s' % provider_id, methods=['GET'],
-                     endpoint='connect_%s_callback' % provider_id)
-    @login_required
-    @service_provider.authorized_handler
-    def connect_callback(response):
-        """The route which the provider should redirect to after a user
-        attempts to connect their account with the provider with their local
-        application account
-        """
-        return getattr(_social, provider_id).connect_handler(response)
-
-    @blueprint.route('/login/%s' % provider_id, methods=['GET'],
-                     endpoint='login_%s_callback' % provider_id)
-    @service_provider.authorized_handler
-    def login_callback(response):
-        """The route which the provider should redirect to after a user
-        attempts to login with their account with the provider
-        """
-        return getattr(_social, provider_id).login_handler(response)
-
-    return provider_id, service_provider
 
 
 def login(provider_id):

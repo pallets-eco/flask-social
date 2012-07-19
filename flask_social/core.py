@@ -14,10 +14,12 @@ from flask.ext.security import current_user
 from flask.ext.oauth import OAuth
 from werkzeug.local import LocalProxy
 
+from flask.ext.security import login_required
+
 from flask_social import exceptions
 from flask_social.utils import get_display_name, do_flash, config_value, \
      get_default_provider_names, get_class_from_string
-
+from flask_social.views import create_blueprint, login_handler, connect_handler
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
@@ -201,21 +203,27 @@ class ConnectHandler(OAuthHandler):
 
 class _SocialState(object):
 
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key.lower(), value)
+    def __init__(self, app, datastore, oauth, providers):
+        self.app = app
+        self.datastore = datastore
+        self.oauth = oauth
 
-    def __getattr__(self, name):
-        return self.providers.get(name, None)
+        for key, value in providers.items():
+            app.logger.debug('setting %s to %s' % (key, value))
+            setattr(self, key, value)
 
 
 class Social(object):
 
     def __init__(self, app=None, datastore=None):
+        self.app = app
+        self.datastore = datastore
+        self.oauth = OAuth()
+
         if app is not None and datastore is not None:
             self._state = self.init_app(app, datastore)
 
-    def init_app(self, app, datastore):
+    def init_app(self, app, datastore=None):
         """Initialize the application with the Social module
 
         :param app: The Flask application
@@ -253,28 +261,21 @@ class Social(object):
 
                 provider_configs.append(d_config)
 
-        oauth = OAuth()
-
-        from flask_social import views
-
         # Configure the URL handlers for each fo the configured providers
-        blueprint = views.create_blueprint(
-            app, 'flask_social', __name__,
+        blueprint = create_blueprint(app, 'flask_social', __name__,
             url_prefix=config_value('URL_PREFIX', app=app))
 
         providers = {}
 
         for pc in provider_configs:
-            pid, p = views.configure_provider(app, blueprint, oauth, pc)
+            pid, p = configure_provider(app, blueprint, self.oauth, pc)
             providers[pid] = p
             app.logger.debug('Registered social provider: %s' % p)
 
         app.register_blueprint(blueprint)
 
-        state = _SocialState(
-            oauth=oauth,
-            providers=providers,
-            datastore=datastore)
+        state = self._get_state(app, datastore or self.datastore,
+                                self.oauth, providers,)
 
         if not hasattr(app, 'extensions'):
             app.extensions = {}
@@ -283,5 +284,75 @@ class Social(object):
 
         return state
 
+    def _get_state(self, app, datastore, oauth, providers):
+        assert app is not None
+        assert datastore is not None
+        assert oauth is not None
+        assert providers is not None
+
+        return _SocialState(app, datastore, oauth, providers)
+
     def __getattr__(self, name):
         return getattr(self._state, name, None)
+
+
+def configure_provider(app, blueprint, oauth, config):
+    """
+    Configures and registers a service provider connection Factory with the
+    main application. The connection factory is accessible via:
+
+        from flask import current_app as app
+        app.social.<provider_id>
+    """
+    provider_id = config['id']
+    o_config = config['oauth']
+
+    try:
+        o_config['consumer_key']
+        o_config['consumer_secret']
+    except KeyError:
+        raise Exception('consumer_key and/or consumer_secret not found '
+                        'for provider %s' % config['display_name'])
+
+    remote_app = oauth.remote_app(provider_id, **o_config)
+
+    def get_handler(clazz_name, config, callback):
+        return get_class_from_string(clazz_name)(callback=callback, **config)
+
+    cf_class_name = config['connection_factory']
+    ConnectionFactoryClass = get_class_from_string(cf_class_name)
+
+    cf = ConnectionFactoryClass(**o_config)
+    lh = get_handler(config['login_handler'], o_config, login_handler)
+    ch = get_handler(config['connect_handler'], o_config, connect_handler)
+
+    service_provider = Provider(remote_app, cf, lh, ch)
+
+    @service_provider.tokengetter
+    def get_token():
+        # Social doesn't use the builtin remote method calls feature of the
+        # Flask-OAuth extension so we don't need to return a token. This does,
+        # however, need to be configured
+        return None
+
+    @blueprint.route('/connect/%s' % provider_id, methods=['GET'],
+                     endpoint='connect_%s_callback' % provider_id)
+    @login_required
+    @service_provider.authorized_handler
+    def connect_callback(response):
+        """The route which the provider should redirect to after a user
+        attempts to connect their account with the provider with their local
+        application account
+        """
+        return getattr(_social, provider_id).connect_handler(response)
+
+    @blueprint.route('/login/%s' % provider_id, methods=['GET'],
+                     endpoint='login_%s_callback' % provider_id)
+    @service_provider.authorized_handler
+    def login_callback(response):
+        """The route which the provider should redirect to after a user
+        attempts to login with their account with the provider
+        """
+        return getattr(_social, provider_id).login_handler(response)
+
+    return provider_id, service_provider
