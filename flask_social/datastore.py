@@ -9,7 +9,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
-from flask_social import exceptions
+from . import exceptions
 
 
 class ConnectionDatastore(object):
