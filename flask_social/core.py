@@ -209,7 +209,6 @@ class _SocialState(object):
         self.oauth = oauth
 
         for key, value in providers.items():
-            app.logger.debug('setting %s to %s' % (key, value))
             setattr(self, key, value)
 
 
@@ -224,7 +223,7 @@ class Social(object):
             self._state = self.init_app(app, datastore)
 
     def init_app(self, app, datastore=None):
-        """Initialize the application with the Social module
+        """Initialize the application with the Social extension
 
         :param app: The Flask application
         :param datastore: Connection datastore instance
@@ -297,12 +296,8 @@ class Social(object):
 
 
 def configure_provider(app, blueprint, oauth, config):
-    """
-    Configures and registers a service provider connection Factory with the
-    main application. The connection factory is accessible via:
-
-        from flask import current_app as app
-        app.social.<provider_id>
+    """Configures and registers a service provider connection Factory with the
+    main application.
     """
     provider_id = config['id']
     o_config = config['oauth']
