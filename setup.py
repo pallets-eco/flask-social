@@ -1,14 +1,18 @@
 """
 Flask-Social
---------------
+============
 
-Simple OAuth provider integration for Flask-Security.
+Oauth provider login and APIs for use with
+`Flask-Security <http://packages.python.org/Flask-Security/>`_
 
-Links
-`````
+Resources
+---------
 
-* `development version
-  <https://github.com/mattupstate/flask-social/raw/develop#egg=Flask-Social-dev>`_
+- `Documentation <http://packages.python.org/Flask-Social/>`_
+- `Issue Tracker <http://github.com/mattupstate/flask-social/issues>`_
+- `Code <http://github.com/mattupstate/flask-social/>`_
+- `Development Version
+  <http://github.com/mattupstate/flask-rq/zipball/develop#egg=Flask-Social-dev>`_
 
 """
 from setuptools import setup

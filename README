@@ -1,8 +1,0 @@
-Flask-Social
-============
-
-Oauth provider login and APIs for use with Flask-Security.
-
-Documentation: http://packages.python.org/Flask-Social/
-
-Example Application: http://flask-social-example.herokuapp.com
