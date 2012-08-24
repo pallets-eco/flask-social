@@ -42,7 +42,7 @@ class TwitterConnectionFactory(ConnectionFactory):
         self.consumer_key = consumer_key
         self.consumer_secret = consumer_secret
 
-    def _create_api(self, connection):
+    def get_api(self, connection):
         return twitter.Api(consumer_key=self.consumer_key,
                            consumer_secret=self.consumer_secret,
                            access_token_key=getattr(connection, 'access_token'),

@@ -40,7 +40,7 @@ class FacebookConnectionFactory(ConnectionFactory):
     def __init__(self, **kwargs):
         super(FacebookConnectionFactory, self).__init__('facebook')
 
-    def _create_api(self, connection):
+    def get_api(self, connection):
         return facebook.GraphAPI(getattr(connection, 'access_token'))
 
 

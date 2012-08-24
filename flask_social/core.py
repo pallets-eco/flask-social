@@ -30,7 +30,7 @@ _datastore = LocalProxy(lambda: _social.datastore)
 _logger = LocalProxy(lambda: current_app.logger)
 
 default_config = {
-    'SOCIAL_URL_PREFIX': '/social',
+    'SOCIAL_URL_PREFIX': None,
     'SOCIAL_CONNECT_ALLOW_VIEW': '/',
     'SOCIAL_CONNECT_DENY_VIEW': '/',
     'SOCIAL_POST_OAUTH_CONNECT_SESSION_KEY': 'post_oauth_connect_url',
@@ -43,21 +43,12 @@ class Provider(object):
                  login_handler, connect_handler):
         self.remote_app = remote_app
         self.connection_factory = connection_factory
+        self.get_connection = connection_factory
         self.login_handler = login_handler
         self.connect_handler = connect_handler
-
-    def get_connection(self, *args, **kwargs):
-        rv = self.connection_factory(*args, **kwargs)
-        return rv
-
-    def tokengetter(self, *args, **kwargs):
-        return self.remote_app.tokengetter(*args, **kwargs)
-
-    def authorized_handler(self, *args, **kwargs):
-        return self.remote_app.authorized_handler(*args, **kwargs)
-
-    def authorize(self, *args, **kwargs):
-        return self.remote_app.authorize(*args, **kwargs)
+        self.tokengetter = remote_app.tokengetter
+        self.authorized_handler = remote_app.authorized_handler
+        self.authorize = remote_app.authorize
 
     def __str__(self):
         return '<Provider name=%s>' % self.remote_app.name
@@ -77,7 +68,7 @@ class ConnectionFactory(object):
         """
         self.provider_id = provider_id
 
-    def _create_api(self, connection):
+    def get_api(self, connection):
         raise NotImplementedError
 
     def get_connection(self, user_id=None, provider_user_id=None):
@@ -97,7 +88,7 @@ class ConnectionFactory(object):
         connection = _datastore.find_connection(**query_args)
 
         if connection is not None:
-            setattr(connection, 'api', self._create_api(connection))
+            setattr(connection, 'api', self.get_api(connection))
 
         return connection
 
@@ -137,11 +128,9 @@ class LoginHandler(OAuthHandler):
         if response is None:
             do_flash('Access was denied to your %s '
                      'account' % display_name, 'error')
-
             return redirect(_security.login_manager.login_view)
 
         uid = self.get_provider_user_id(response)
-
         return self.callback(self.provider_id, uid, response)
 
 
@@ -167,11 +156,9 @@ class ConnectHandler(OAuthHandler):
 
         if response is None:
             do_flash('Access was denied by %s' % display_name, 'error')
-
             return redirect(get_url(config_value('CONNECT_DENY_VIEW')))
 
         cv = self.get_connection_values(response)
-
         return self.callback(cv, user_id)
 
 
@@ -269,6 +256,15 @@ class Social(object):
         return getattr(self._state, name, None)
 
 
+def _get_handler(clazz_name, config, callback):
+    return get_class_from_string(clazz_name)(callback=callback, **config)
+
+def _get_token():
+    # Social doesn't use the builtin remote method calls feature of the
+    # Flask-OAuth extension so we don't need to return a token. This does,
+    # however, need to be configured
+    return None
+
 def configure_provider(app, blueprint, oauth, config):
     """Configures and registers a service provider connection Factory with the
     main application.
@@ -276,33 +272,18 @@ def configure_provider(app, blueprint, oauth, config):
     provider_id = config['id']
     o_config = config['oauth']
 
-    try:
-        o_config['consumer_key']
-        o_config['consumer_secret']
-    except KeyError:
-        raise Exception('consumer_key and/or consumer_secret not found '
-                        'for provider %s' % config['display_name'])
-
     remote_app = oauth.remote_app(provider_id, **o_config)
-
-    def get_handler(clazz_name, config, callback):
-        return get_class_from_string(clazz_name)(callback=callback, **config)
 
     cf_class_name = config['connection_factory']
     ConnectionFactoryClass = get_class_from_string(cf_class_name)
 
     cf = ConnectionFactoryClass(**o_config)
-    lh = get_handler(config['login_handler'], o_config, login_handler)
-    ch = get_handler(config['connect_handler'], o_config, connect_handler)
+    lh = _get_handler(config['login_handler'], o_config, login_handler)
+    ch = _get_handler(config['connect_handler'], o_config, connect_handler)
 
     service_provider = Provider(remote_app, cf, lh, ch)
 
-    @service_provider.tokengetter
-    def get_token():
-        # Social doesn't use the builtin remote method calls feature of the
-        # Flask-OAuth extension so we don't need to return a token. This does,
-        # however, need to be configured
-        return None
+    service_provider.tokengetter(_get_token)
 
     @blueprint.route('/connect/%s' % provider_id, methods=['GET'],
                      endpoint='connect_%s_callback' % provider_id)

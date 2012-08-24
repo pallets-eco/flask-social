@@ -48,7 +48,7 @@ class FoursquareConnectionFactory(ConnectionFactory):
         self.consumer_key = consumer_key
         self.consumer_secret = consumer_secret
 
-    def _create_api(self, connection):
+    def get_api(self, connection):
         return foursquare.Foursquare(
                 access_token=getattr(connection, 'access_token'))
 

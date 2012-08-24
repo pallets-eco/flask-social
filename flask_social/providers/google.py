@@ -51,7 +51,7 @@ class GoogleConnectionFactory(ConnectionFactory):
         self.consumer_key = consumer_key
         self.consumer_secret = consumer_secret
 
-    def _create_api(self, connection):
+    def get_api(self, connection):
         credentials = googleoauth.AccessTokenCredentials(
             access_token=getattr(connection, 'access_token'),
             user_agent=''
