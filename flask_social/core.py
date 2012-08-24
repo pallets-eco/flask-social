@@ -15,8 +15,9 @@ from flask.ext.oauth import OAuth
 from werkzeug.local import LocalProxy
 
 from flask.ext.security import login_required
+from flask.ext.security.utils import get_url, do_flash
 
-from .utils import get_display_name, do_flash, config_value, \
+from .utils import get_display_name, config_value, \
      get_default_provider_names, get_class_from_string
 from .views import create_blueprint, login_handler, connect_handler
 
@@ -30,10 +31,8 @@ _logger = LocalProxy(lambda: current_app.logger)
 
 default_config = {
     'SOCIAL_URL_PREFIX': '/social',
-    'SOCIAL_APP_URL': 'http://127.0.0.1:5000',
-    'SOCIAL_CONNECT_ALLOW_REDIRECT': '/profile',
-    'SOCIAL_CONNECT_DENY_REDIRECT': '/profile',
-    'SOCIAL_FLASH_MESSAGES': True,
+    'SOCIAL_CONNECT_ALLOW_VIEW': '/',
+    'SOCIAL_CONNECT_DENY_VIEW': '/',
     'SOCIAL_POST_OAUTH_CONNECT_SESSION_KEY': 'post_oauth_connect_url',
     'SOCIAL_POST_OAUTH_LOGIN_SESSION_KEY': 'post_oauth_login_url'
 }
@@ -169,7 +168,7 @@ class ConnectHandler(OAuthHandler):
         if response is None:
             do_flash('Access was denied by %s' % display_name, 'error')
 
-            return redirect(config_value('CONNECT_DENY_REDIRECT'))
+            return redirect(get_url(config_value('CONNECT_DENY_VIEW')))
 
         cv = self.get_connection_values(response)
 

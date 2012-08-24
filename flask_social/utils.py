@@ -13,11 +13,7 @@ import os
 import pkgutil
 from importlib import import_module
 
-from flask import current_app, flash, url_for
-
-def do_flash(message, category):
-    if config_value('FLASH_MESSAGES'):
-        flash(message, category)
+from flask import current_app, url_for, request
 
 
 def get_class_from_string(clazz_name):
@@ -47,7 +43,8 @@ def get_authorize_callback(endpoint, provider_id):
 
     param: endpoint: Absolute path to append to the application's host
     """
-    return '%s%s' % (config_value('APP_URL'), url_for('flask_social.' + endpoint, provider_id=provider_id))
+    url = url_for('flask_social.' + endpoint, provider_id=provider_id)
+    return request.url_root[:-1] + url
 
 
 def get_remote_app(provider_id):

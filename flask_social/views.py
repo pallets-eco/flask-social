@@ -13,13 +13,13 @@ from flask import Blueprint, current_app, redirect, request, session, \
      after_this_request
 from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect, login_user, \
-     get_url, anonymous_user_required
+     get_url, anonymous_user_required, do_flash
 from werkzeug.local import LocalProxy
 
-from flask_social.signals import social_connection_removed, \
+from .signals import social_connection_removed, \
      social_connection_created, social_connection_failed, \
      social_login_completed, social_login_failed
-from flask_social.utils import do_flash, config_value, get_display_name, \
+from .utils import config_value, get_display_name, \
      get_authorize_callback, get_remote_app
 
 
@@ -107,7 +107,7 @@ def connect(provider_id):
                   '%(display_name)s account to user account %(current_user)s. '
                   'Callback URL = %(callback_url)s' % ctx)
 
-    allow_view = config_value('CONNECT_ALLOW_REDIRECT')
+    allow_view = get_url(config_value('CONNECT_ALLOW_VIEW'))
     pc = request.form.get('next', allow_view)
     session[config_value('POST_OAUTH_CONNECT_SESSION_KEY')] = pc
 
@@ -150,7 +150,7 @@ def connect_handler(cv, user_id=None):
                                       user=current_user._get_current_object())
 
     redirect_url = session.pop(config_value('POST_OAUTH_CONNECT_SESSION_KEY'),
-                               config_value('CONNECT_ALLOW_REDIRECT'))
+                               get_url(config_value('CONNECT_ALLOW_VIEW')))
 
     return redirect(redirect_url)
 
