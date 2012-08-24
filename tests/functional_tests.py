@@ -1,8 +1,8 @@
 import unittest
 
 from flask.ext.testing import Twill, twill
-
-from example import app
+from tests.test_app.sqlalchemy import create_app as create_sql_app
+from tests.test_app.mongoengine import create_app as create_mongo_app
 
 
 class SocialTest(unittest.TestCase):
@@ -21,14 +21,10 @@ class SocialTest(unittest.TestCase):
 
     def _create_app(self, auth_config):
         app_type = self.APP_TYPE or 'sql'
-
         if app_type == 'sql':
-            fn = app.create_sqlalchemy_app
-
+            return create_sql_app(auth_config, False)
         if app_type == 'mongo':
-            fn = app.create_mongoengine_app
-
-        return fn(auth_config, False)
+            return create_mongo_app(auth_config, False)
 
     def _login(self, t):
         t.browser.go(t.url('/login'))
