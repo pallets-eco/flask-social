@@ -52,10 +52,25 @@ def get_remote_app(provider_id):
 
     param: provider_id: The ID of the provider to retrive
     """
-    return getattr(current_app.extensions['social'], provider_id)
+    return current_app.extensions['social'].providers[provider_id]
 
 
 def get_default_provider_names():
     from flask_social import providers
     pkg = os.path.dirname(providers.__file__)
     return [name for _, name, _ in pkgutil.iter_modules([pkg])]
+
+
+def get_config(app):
+    """Conveniently get the social configuration for the specified
+    application without the annoying 'SOCIAL_' prefix.
+
+    :param app: The application to inspect
+    """
+    items = app.config.items()
+    prefix = 'SOCIAL_'
+
+    def strip_prefix(tup):
+        return (tup[0].replace(prefix, ''), tup[1])
+
+    return dict([strip_prefix(i) for i in items if i[0].startswith(prefix)])
