@@ -35,7 +35,7 @@ setup(
     platforms='any',
     install_requires=[
         'Flask-Security==1.3.0-dev',
-        'Flask-OAuth==0.12-dev'
+        'Flask-OAuth==0.12'
     ],
     test_suite='nose.collector',
     tests_require=[
@@ -46,7 +46,7 @@ setup(
     ],
     dependency_links=[
         'http://github.com/mattupstate/flask-security/tarball/develop#egg=Flask-Security-1.3.0-dev',
-        'http://github.com/mattupstate/flask-oauth/tarball/master#egg=Flask-OAuth-0.12-dev'
+        'http://github.com/mattupstate/flask-oauth/tarball/master#egg=Flask-OAuth-0.12'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
