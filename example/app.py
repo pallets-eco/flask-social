@@ -45,12 +45,8 @@ class HTTPMethodOverrideMiddleware(object):
 
 def create_users():
     for u in  (('matt@lp.com', 'password'),):
-        try:
-            current_app.security.datastore.create_user(email=u[0], password=u[1])
-            current_app.security.datastore._commit()
-        except Exception, e:
-            print 'Errors: %s' % e
-            raise
+        current_app.security.datastore.create_user(email=u[0], password=u[1])
+        current_app.security.datastore.commit()
 
 
 def populate_data():
@@ -135,8 +131,6 @@ def create_sqlalchemy_app(config=None, debug=True):
 
     app.security = Security(app, SQLAlchemyUserDatastore(db, User, Role))
     app.social = Social(app, SQLAlchemyConnectionDatastore(db, Connection))
-
-    print app.url_map
 
     @app.before_first_request
     def before_first_request():

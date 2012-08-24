@@ -9,12 +9,13 @@
     :license: MIT, see LICENSE for more details.
 """
 
-from flask import Blueprint, current_app, redirect, request, session
+from flask import Blueprint, current_app, redirect, request, session, \
+     after_this_request
 from flask.ext.security import current_user, login_required
-from flask.ext.security.utils import get_post_login_redirect, login_user
+from flask.ext.security.utils import get_post_login_redirect, login_user, \
+     get_url
 from werkzeug.local import LocalProxy
 
-from flask_social import exceptions
 from flask_social.signals import social_connection_removed, \
      social_connection_created, social_connection_failed, \
      social_login_completed, social_login_failed
@@ -30,6 +31,11 @@ _social = LocalProxy(lambda: current_app.extensions['social'])
 _datastore = LocalProxy(lambda: _social.datastore)
 
 _logger = LocalProxy(lambda: current_app.logger)
+
+
+def _commit(response=None):
+    _datastore.commit()
+    return response
 
 
 def login(provider_id):
@@ -88,8 +94,8 @@ def login_handler(provider_id, provider_user_id, oauth_response):
     social_login_failed.send(current_app._get_current_object(),
                              provider_id=provider_id,
                              oauth_response=oauth_response)
-
-    return redirect(_security.login_manager.login_view)
+    next = get_url(_security.login_manager.login_view)
+    return redirect(next)
 
 
 def connect(provider_id):
@@ -121,8 +127,11 @@ def connect_handler(cv, user_id=None):
     display_name = get_display_name(provider_id)
     cv['user_id'] = user_id or current_user.get_id()
 
-    try:
-        connection = _datastore.save_connection(**cv)
+    connection = _datastore.find_connection(**cv)
+
+    if connection is None:
+        connection = _datastore.create_connection(**cv)
+        after_this_request(_commit)
 
         _logger.debug('Connection to %s established '
                       'for %s' % (display_name, current_user))
@@ -133,23 +142,15 @@ def connect_handler(cv, user_id=None):
 
         do_flash('Connection established to %s' % display_name, 'success')
 
-    except exceptions.ConnectionExistsError, e:
+    else:
         _logger.debug('Connection to %s exists already '
                       'for %s' % (display_name, current_user))
 
         do_flash('A connection is already established with %s '
                  'to your account' % display_name, 'notice')
 
-    except Exception, e:
-        _logger.error('Unexpected error connecting %s account for '
-                      'user. Reason: %s' % (display_name, e))
-
         social_connection_failed.send(current_app._get_current_object(),
-                                      user=current_user._get_current_object(),
-                                      error=e)
-
-        do_flash('Could not make connection to %s. '
-                 'Please try again later.' % display_name, 'error')
+                                      user=current_user._get_current_object())
 
     redirect_url = session.pop(config_value('POST_OAUTH_CONNECT_SESSION_KEY'),
                                config_value('CONNECT_ALLOW_REDIRECT'))
@@ -164,9 +165,10 @@ def remove_all_connections(provider_id):
     display_name = get_display_name(provider_id)
 
     ctx = dict(provider=display_name, user=current_user)
-
-    try:
-        _datastore.remove_all_connections(current_user.get_id(), provider_id)
+    deleted = _datastore.delete_connections(user_id=current_user.get_id(),
+                                            provider_id=provider_id)
+    if deleted:
+        after_this_request(_commit)
 
         social_connection_removed.send(current_app._get_current_object(),
                                        user=current_user._get_current_object(),
@@ -177,7 +179,7 @@ def remove_all_connections(provider_id):
 
         do_flash('All connections to %s removed' % display_name, 'info')
 
-    except:
+    else:
         _logger.error('Unable to remove all connections to '
                       '%(provider)s for %(user)s' % ctx)
 
@@ -198,10 +200,11 @@ def remove_connection(provider_id, provider_user_id):
                user=current_user,
                provider_user_id=provider_user_id)
 
-    try:
-        _datastore.remove_connection(current_user.get_id(),
-                                     provider_id, provider_user_id)
-
+    deleted = _datastore.delete_connection(user_id=current_user.get_id(),
+                                           provider_id=provider_id,
+                                           provider_user_id=provider_user_id)
+    if deleted:
+        after_this_request(_commit)
         social_connection_removed.send(current_app._get_current_object(),
                                        user=current_user._get_current_object(),
                                        provider_id=provider_id)
@@ -211,7 +214,7 @@ def remove_connection(provider_id, provider_user_id):
 
         do_flash('Connection to %(provider)s removed' % ctx, 'info')
 
-    except exceptions.ConnectionNotFoundError:
+    else:
         _logger.error('Unable to remove connection to %(provider)s account '
                       '%(provider_user_id)s for %(user)s' % ctx)
 

@@ -38,14 +38,11 @@ class SocialTest(unittest.TestCase):
 
     def _login_provider(self, t, provider):
         t.browser.go(t.url('/login'))
-        print t.browser.get_html()
         twill.commands.fv('%s_login_form' % provider, 'login_%s' % provider, '')
         t.browser.submit(1)
-        print t.browser.get_html()
 
     def _start_connect(self, t, provider):
         t.browser.go(t.url('/profile'))
-        #print t.browser.get_html()
         twill.commands.fv('%s_connect_form' % provider,
                           'connect_' + provider,
                           '')
@@ -97,13 +94,14 @@ class TwitterSocialTests(SocialTest):
             self._authorize_twitter(t)
             self._start_connect(t, 'twitter')
             self._authorize_twitter(t)
-            assert 'A connection is already established with' in t.browser.get_html()
+            self.assertIn('A connection is already established with', t.browser.get_html())
 
     def test_unconnected_twitter_login(self):
         with Twill(self.app) as t:
             self._login_provider(t, 'twitter')
             self._authorize_twitter(t)
-            assert 'Twitter account not associated with an existing user' in t.browser.get_html()
+            self.assertIn('Twitter account not associated with an existing user',
+                          t.browser.get_html())
 
     def test_connected_login_with_twitter(self):
         with Twill(self.app) as t:

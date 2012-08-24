@@ -16,7 +16,6 @@ from werkzeug.local import LocalProxy
 
 from flask.ext.security import login_required
 
-from . import exceptions
 from .utils import get_display_name, do_flash, config_value, \
      get_default_provider_names, get_class_from_string
 from .views import create_blueprint, login_handler, connect_handler
@@ -49,13 +48,8 @@ class Provider(object):
         self.connect_handler = connect_handler
 
     def get_connection(self, *args, **kwargs):
-        return self.connection_factory(*args, **kwargs)
-
-    def login_handler(self, *args, **kwargs):
-        return self.login_handler(*args, **kwargs)
-
-    def connect_handler(self, *args, **kwargs):
-        return self.connect_handler(*args, **kwargs)
+        rv = self.connection_factory(*args, **kwargs)
+        return rv
 
     def tokengetter(self, *args, **kwargs):
         return self.remote_app.tokengetter(*args, **kwargs)
@@ -84,19 +78,8 @@ class ConnectionFactory(object):
         """
         self.provider_id = provider_id
 
-    def _get_current_user_primary_connection(self):
-        return self._get_primary_connection(current_user.get_id())
-
-    def _get_primary_connection(self, user_id):
-        return _datastore.get_primary_connection(
-            user_id, self.provider_id)
-
-    def _get_specific_connection(self, user_id, provider_user_id):
-        return _datastore.get_connection(user_id,
-            self.provider_id, provider_user_id)
-
     def _create_api(self, connection):
-        raise NotImplementedError('create_api method not implemented')
+        raise NotImplementedError
 
     def get_connection(self, user_id=None, provider_user_id=None):
         """Get a connection to the provider for the specified local user
@@ -105,30 +88,22 @@ class ConnectionFactory(object):
         :param user_id: The local user ID
         :param provider_user_id: The provider user ID
         """
-        if user_id == None and provider_user_id == None:
-            connection = self._get_current_user_primary_connection()
-        if user_id != None and provider_user_id == None:
-            connection = self._get_primary_connection(user_id)
-        if user_id != None and provider_user_id != None:
-            connection = self._get_specific_connection(user_id,
-                                                       provider_user_id)
 
-        def as_dict(model):
-            rv = {}
-            for key in ('user_id', 'provider_id', 'provider_user_id',
-                        'access_token', 'secret', 'display_name',
-                        'profile_url', 'image_url'):
-                rv[key] = getattr(model, key)
-            return rv
+        query_args = dict(user_id=user_id or current_user.get_id(),
+                          provider_id=self.provider_id)
 
-        return dict(api=self._create_api(connection),
-                    **as_dict(connection))
+        if provider_user_id:
+            query_args.set('provider_user_id', provider_user_id)
+
+        connection = _datastore.find_connection(**query_args)
+
+        if connection is not None:
+            setattr(connection, 'api', self._create_api(connection))
+
+        return connection
 
     def __call__(self, **kwargs):
-        try:
-            return self.get_connection(**kwargs)
-        except exceptions.ConnectionNotFoundError:
-            return None
+        return self.get_connection(**kwargs)
 
 
 class OAuthHandler(object):
@@ -312,7 +287,6 @@ def configure_provider(app, blueprint, oauth, config):
     remote_app = oauth.remote_app(provider_id, **o_config)
 
     def get_handler(clazz_name, config, callback):
-        print 'Callback: %s' % callback
         return get_class_from_string(clazz_name)(callback=callback, **config)
 
     cf_class_name = config['connection_factory']
