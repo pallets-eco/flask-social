@@ -13,7 +13,7 @@ from flask import Blueprint, current_app, redirect, request, session, \
      after_this_request
 from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect, login_user, \
-     get_url
+     get_url, anonymous_user_required
 from werkzeug.local import LocalProxy
 
 from flask_social.signals import social_connection_removed, \
@@ -38,11 +38,9 @@ def _commit(response=None):
     return response
 
 
+@anonymous_user_required
 def login(provider_id):
     """Starts the provider login OAuth flow"""
-
-    if current_user.is_authenticated():
-        return redirect(request.referrer or '/')
 
     callback_url = get_authorize_callback('login', provider_id)
     display_name = get_display_name(provider_id)
@@ -56,11 +54,9 @@ def login(provider_id):
     return get_remote_app(provider_id).authorize(callback_url)
 
 
+@anonymous_user_required
 def login_handler(provider_id, provider_user_id, oauth_response):
     """Shared method to handle the signin process"""
-
-    if current_user.is_authenticated():
-        return redirect('/')
 
     display_name = get_display_name(provider_id)
 
@@ -98,6 +94,7 @@ def login_handler(provider_id, provider_user_id, oauth_response):
     return redirect(next)
 
 
+@login_required
 def connect(provider_id):
     """Starts the provider connection OAuth flow"""
     callback_url = get_authorize_callback('connect', provider_id)
@@ -157,7 +154,7 @@ def connect_handler(cv, user_id=None):
 
     return redirect(redirect_url)
 
-
+@login_required
 def remove_all_connections(provider_id):
     """Remove all connections for the authenticated user to the
     specified provider
@@ -190,6 +187,7 @@ def remove_all_connections(provider_id):
     return redirect(request.referrer)
 
 
+@login_required
 def remove_connection(provider_id, provider_user_id):
     """Remove a specific connection for the authenticated user to the
     specified provider
@@ -230,12 +228,12 @@ def create_blueprint(app, name, import_name, **kwargs):
              methods=['POST'])(login)
 
     bp.route('/connect/<provider_id>',
-             methods=['POST'])(login_required(connect))
+             methods=['POST'])(connect)
 
     bp.route('/connect/<provider_id>',
-             methods=['DELETE'])(login_required(remove_all_connections))
+             methods=['DELETE'])(remove_all_connections)
 
     bp.route('/connect/<provider_id>/<provider_user_id>',
-             methods=['DELETE'])(login_required(remove_connection))
+             methods=['DELETE'])(remove_connection)
 
     return bp
