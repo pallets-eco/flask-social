@@ -9,6 +9,8 @@
     :license: MIT, see LICENSE for more details.
 """
 
+from flask_security.datastore import SQLAlchemyDatastore, MongoEngineDatastore
+
 from . import exceptions
 
 
@@ -19,18 +21,19 @@ class ConnectionDatastore(object):
     :param db: An instance of a configured databse manager from a Flask
                extension such as Flask-SQLAlchemy or Flask-MongoEngine"""
 
-    def __init__(self, db, connection_model):
-        self.db = db
+    def __init__(self, connection_model):
         self.connection_model = connection_model
+
+    def _do_find_connection(self, **kwargs):
+        raise NotImplementedError
+
+    def find_connection(self, **kwargs):
+        return self._do_find_connection(**kwargs)
 
     def _do_get(self, rv):
         if rv is None:
             raise exceptions.ConnectionNotFoundError()
         return  rv
-
-    def _save_model(self, model, **kwargs):
-        raise NotImplementedError(
-            "User datastore does not implement _save_model method")
 
     def remove_connection(self, user_id, provider_id, provider_user_id):
         """Remove a single connection to a provider for the specified user
@@ -119,36 +122,17 @@ class ConnectionDatastore(object):
             raise exceptions.ConnectionExistsError()
 
         except exceptions.ConnectionNotFoundError:
-            return self._save_model(self.connection_model(**kwargs))
+            conn = self._save_model(self.connection_model(**kwargs))
+            self._commit()
+            return conn
 
 
-class SQLAlchemyConnectionDatastore(ConnectionDatastore):
-    """A SQLAlchemy datastore implementation for Flask-Social.
-    Example usage::
+class SQLAlchemyConnectionDatastore(SQLAlchemyDatastore, ConnectionDatastore):
+    """A SQLAlchemy datastore implementation for Flask-Social."""
 
-        from flask import Flask
-        from flask.ext.sqlalchemy import SQLAlchemy
-
-        from flask.ext.social import Social
-        from flask.ext.social.datastore import SQLAlchemyConnectionDatastore
-
-        app = Flask(__name__)
-        app.config['SECRET_KEY'] = 'secret'
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'your_db_uri'
-
-        db = SQLAlchemy(app)
-        Social(app, SQLAlchemyConnectionDatastore(db))
-    """
-
-    def _save_model(self, model):
-        self.db.session.add(model)
-        self.db.session.commit()
-        return model
-
-    def _delete_model(self, *models):
-        for m in models:
-            self.db.session.delete(m)
-        self.db.session.commit()
+    def __init__(self, db, connection_model):
+        SQLAlchemyDatastore.__init__(self, db)
+        ConnectionDatastore.__init__(self, connection_model)
 
     def remove_connection(self, user_id, provider_id, provider_user_id):
         conn = self.get_connection(user_id, provider_id, provider_user_id)
@@ -159,6 +143,9 @@ class SQLAlchemyConnectionDatastore(ConnectionDatastore):
             self.connection_model.query.filter_by(
                 user_id=user_id,
                 provider_id=provider_id))
+
+    def _do_find_connection(self, **kwargs):
+        return self.connection_model.query.filter_by(**kwargs).first()
 
     def _get_connection_by_provider_user_id(self,
                                             provider_id,
@@ -180,32 +167,12 @@ class SQLAlchemyConnectionDatastore(ConnectionDatastore):
             provider_user_id=provider_user_id).first()
 
 
-class MongoEngineConnectionDatastore(ConnectionDatastore):
-    """A MongoEngine datastore implementation for Flask-Social.
-    Example usage::
+class MongoEngineConnectionDatastore(MongoEngineDatastore, ConnectionDatastore):
+    """A MongoEngine datastore implementation for Flask-Social."""
 
-        from flask import Flask
-        from flask.ext.mongoengine import MongoEngine
-        from flask.ext.social import Social
-        from flask.ext.social.datastore import MongoEngineConnectionDatastore
-
-        app = Flask(__name__)
-        app.config['SECRET_KEY'] = 'secret'
-        app.config['MONGODB_DB'] = 'flask_social_example'
-        app.config['MONGODB_HOST'] = 'localhost'
-        app.config['MONGODB_PORT'] = 27017
-
-        db = MongoEngine(app)
-        Social(app, MongoEngineConnectionDatastore(db))
-    """
-
-    def _save_model(self, model):
-        model.save()
-        return model
-
-    def _delete_model(self, *models):
-        for m in models:
-            m.delete()
+    def __init__(self, db, connection_model):
+        MongoEngineDatastore.__init__(self, db)
+        ConnectionDatastore.__init__(self, connection_model)
 
     def remove_connection(self, user_id, provider_id, provider_user_id):
         self._delete_model(
@@ -216,6 +183,9 @@ class MongoEngineConnectionDatastore(ConnectionDatastore):
             self.connection_model.objects(
                 user_id=user_id,
                 provider_id=provider_id))
+
+    def _do_find_connection(self, **kwargs):
+        return self.connection_model.objects(**kwargs).first()
 
     def _get_connection_by_provider_user_id(self,
                                             provider_id,

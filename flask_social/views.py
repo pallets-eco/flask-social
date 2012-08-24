@@ -11,8 +11,7 @@
 
 from flask import Blueprint, current_app, redirect, request, session
 from flask.ext.security import current_user, login_required
-from flask.ext.security.utils import get_post_login_redirect
-from flask.ext.security.views import _do_login as login_user
+from flask.ext.security.utils import get_post_login_redirect, login_user
 from werkzeug.local import LocalProxy
 
 from flask_social import exceptions
@@ -39,7 +38,7 @@ def login(provider_id):
     if current_user.is_authenticated():
         return redirect(request.referrer or '/')
 
-    callback_url = get_authorize_callback('/login/%s' % provider_id)
+    callback_url = get_authorize_callback('login', provider_id)
     display_name = get_display_name(provider_id)
 
     _logger.debug('Starting login via %s account. Callback '
@@ -62,41 +61,29 @@ def login_handler(provider_id, provider_user_id, oauth_response):
     _logger.debug('Attempting login via %s with provider user '
                   '%s' % (display_name, provider_user_id))
 
-    try:
-        fn = _datastore.get_connection_by_provider_user_id
-        connection = fn(provider_id, provider_user_id)
+    connection = _datastore.find_connection(provider_id=provider_id,
+                                            provider_user_id=provider_user_id)
 
-        user = _security.datastore.with_id(connection.user_id)
+    if connection:
+        user = connection.user
+        login_user(user)
+        key = config_value('POST_OAUTH_LOGIN_SESSION_KEY')
+        redirect_url = session.pop(key, get_post_login_redirect())
 
-        if login_user(user):
-            key = config_value('POST_OAUTH_LOGIN_SESSION_KEY')
-            redirect_url = session.pop(key, get_post_login_redirect())
+        _logger.debug('User logged in via %s. Redirecting to '
+                      '%s' % (display_name, redirect_url))
 
-            _logger.debug('User logged in via %s. Redirecting to '
-                          '%s' % (display_name, redirect_url))
+        social_login_completed.send(current_app._get_current_object(),
+                                    provider_id=provider_id, user=user)
 
-            social_login_completed.send(current_app._get_current_object(),
-                                        provider_id=provider_id, user=user)
+        return redirect(redirect_url)
 
-            return redirect(redirect_url)
-
-        else:
-            _logger.info('Inactive local user attempted '
-                         'login via %s.' % display_name)
-
-            do_flash('Inactive user", "error')
-
-    except exceptions.ConnectionNotFoundError:
-        _logger.info('Login attempt via %s failed because '
+    _logger.info('Login attempt via %s failed because '
                      'connection was not found.' % display_name)
 
-        msg = '%s account not associated with an existing user' % display_name
+    msg = '%s account not associated with an existing user' % display_name
 
-        do_flash(msg, 'error')
-
-    except Exception, e:
-        _logger.error('Unexpected error signing in '
-                      'via %s: %s' % (display_name, e))
+    do_flash(msg, 'error')
 
     social_login_failed.send(current_app._get_current_object(),
                              provider_id=provider_id,
@@ -107,7 +94,7 @@ def login_handler(provider_id, provider_user_id, oauth_response):
 
 def connect(provider_id):
     """Starts the provider connection OAuth flow"""
-    callback_url = get_authorize_callback('/connect/%s' % provider_id)
+    callback_url = get_authorize_callback('connect', provider_id)
 
     ctx = dict(display_name=get_display_name(provider_id),
                current_user=current_user,

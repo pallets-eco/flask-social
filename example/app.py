@@ -10,12 +10,12 @@ from flask import Flask, render_template, current_app, redirect
 from flask.ext.mongoengine import MongoEngine
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.security import Security, LoginForm, login_required, \
-    current_user, UserMixin, RoleMixin
+     current_user, UserMixin, RoleMixin
 from flask.ext.security.datastore import SQLAlchemyUserDatastore, \
-    MongoEngineUserDatastore
-from flask.ext.social import Social
-from flask.ext.social.datastore import SQLAlchemyConnectionDatastore, \
-    MongoEngineConnectionDatastore
+     MongoEngineUserDatastore
+from flask.ext.social import Social, SQLAlchemyConnectionDatastore, \
+     MongoEngineConnectionDatastore
+
 from werkzeug import url_decode
 
 
@@ -47,6 +47,7 @@ def create_users():
     for u in  (('matt@lp.com', 'password'),):
         try:
             current_app.security.datastore.create_user(email=u[0], password=u[1])
+            current_app.security.datastore._commit()
         except Exception, e:
             print 'Errors: %s' % e
             raise
@@ -82,14 +83,6 @@ def create_app(config, debug=True):
     def index():
         return render_template('index.html', content='Home Page')
 
-    @app.route('/login')
-    def login():
-        if current_user.is_authenticated():
-            return redirect('/')
-
-        return render_template(
-            'login.html', content='Login Page', form=LoginForm())
-
     @app.route('/profile')
     @login_required
     def profile():
@@ -123,8 +116,6 @@ def create_sqlalchemy_app(config=None, debug=True):
         email = db.Column(db.String(255), unique=True)
         password = db.Column(db.String(120))
         active = db.Column(db.Boolean())
-        remember_token = db.Column(db.String(255))
-        authentication_token = db.Column(db.String(255))
         roles = db.relationship('Role', secondary=roles_users,
                     backref=db.backref('users', lazy='dynamic'))
         connections = db.relationship('Connection',
@@ -144,6 +135,8 @@ def create_sqlalchemy_app(config=None, debug=True):
 
     app.security = Security(app, SQLAlchemyUserDatastore(db, User, Role))
     app.social = Social(app, SQLAlchemyConnectionDatastore(db, Connection))
+
+    print app.url_map
 
     @app.before_first_request
     def before_first_request():

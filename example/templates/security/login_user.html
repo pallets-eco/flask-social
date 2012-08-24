@@ -1,0 +1,26 @@
+{% from "security/_macros.html" import render_field_with_errors, render_field %}
+{% include "_messages.html" %}
+{% include "_nav.html" %}
+
+<p>{{ content }}</p>
+
+<form action="{{ url_for_security('login') }}" method="POST" name="login_user_form">
+  {{ login_user_form.hidden_tag() }}
+  {{ render_field_with_errors(login_user_form.email) }}
+  {{ render_field_with_errors(login_user_form.password) }}
+  {{ render_field_with_errors(login_user_form.remember) }}
+  {{ render_field(login_user_form.next) }}
+  {{ render_field(login_user_form.submit) }}
+</form>
+
+<form action="{{ url_for('flask_social.login', provider_id='twitter') }}" name='twitter_login_form' method="POST">
+  <input type="submit" name="login_twitter" value="Login with Twitter" />
+</form>
+
+<form action="{{ url_for('flask_social.login', provider_id='facebook') }}" name='facebook_login_form' method="POST">
+  <input type="submit" name="login_facebook" value="Login with Facebook" />
+</form>
+
+<form action="{{ url_for('flask_social.login', provider_id='foursquare') }}" name='foursquare_login_form' method="POST">
+  <input type="submit" name="login_foursquare" value="Login with foursquare" />
+</form>

@@ -32,17 +32,20 @@ class SocialTest(unittest.TestCase):
 
     def _login(self, t):
         t.browser.go(t.url('/login'))
-        twill.commands.fv('login_form', 'email', 'matt@lp.com')
-        twill.commands.fv('login_form', 'password', 'password')
+        twill.commands.fv('login_user_form', 'email', 'matt@lp.com')
+        twill.commands.fv('login_user_form', 'password', 'password')
         twill.commands.submit(0)
 
     def _login_provider(self, t, provider):
         t.browser.go(t.url('/login'))
+        print t.browser.get_html()
         twill.commands.fv('%s_login_form' % provider, 'login_%s' % provider, '')
         t.browser.submit(1)
+        print t.browser.get_html()
 
     def _start_connect(self, t, provider):
         t.browser.go(t.url('/profile'))
+        #print t.browser.get_html()
         twill.commands.fv('%s_connect_form' % provider,
                           'connect_' + provider,
                           '')
@@ -85,7 +88,7 @@ class TwitterSocialTests(SocialTest):
             self._login(t)
             self._start_connect(t, 'twitter')
             self._authorize_twitter(t)
-            assert 'Connection established to Twitter' in t.browser.get_html()
+            self.assertIn('Connection established to Twitter', t.browser.get_html())
 
     def test_double_connect_twitter(self):
         with Twill(self.app) as t:
@@ -110,7 +113,7 @@ class TwitterSocialTests(SocialTest):
             t.browser.go(t.url('/logout'))
             self._login_provider(t, 'twitter')
             self._authorize_twitter(t)
-            assert 'Profile Page' in t.browser.get_html()
+            self.assertIn('Profile Page', t.browser.get_html())
 
     def test_remove_connection(self):
         with Twill(self.app) as t:

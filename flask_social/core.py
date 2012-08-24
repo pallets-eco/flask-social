@@ -16,10 +16,10 @@ from werkzeug.local import LocalProxy
 
 from flask.ext.security import login_required
 
-from flask_social import exceptions
-from flask_social.utils import get_display_name, do_flash, config_value, \
+from . import exceptions
+from .utils import get_display_name, do_flash, config_value, \
      get_default_provider_names, get_class_from_string
-from flask_social.views import create_blueprint, login_handler, connect_handler
+from .views import create_blueprint, login_handler, connect_handler
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
@@ -30,7 +30,7 @@ _datastore = LocalProxy(lambda: _social.datastore)
 _logger = LocalProxy(lambda: current_app.logger)
 
 default_config = {
-    'SOCIAL_URL_PREFIX': None,
+    'SOCIAL_URL_PREFIX': '/social',
     'SOCIAL_APP_URL': 'http://127.0.0.1:5000',
     'SOCIAL_CONNECT_ALLOW_REDIRECT': '/profile',
     'SOCIAL_CONNECT_DENY_REDIRECT': '/profile',
@@ -312,6 +312,7 @@ def configure_provider(app, blueprint, oauth, config):
     remote_app = oauth.remote_app(provider_id, **o_config)
 
     def get_handler(clazz_name, config, callback):
+        print 'Callback: %s' % callback
         return get_class_from_string(clazz_name)(callback=callback, **config)
 
     cf_class_name = config['connection_factory']
