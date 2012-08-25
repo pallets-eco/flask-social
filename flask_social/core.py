@@ -165,6 +165,7 @@ class ConnectHandler(OAuthHandler):
         cv = self.get_connection_values(response)
         return self.callback(cv, user_id)
 
+
 def _get_state(app, datastore, oauth, providers, **kwargs):
     for key, value in get_config(app).items():
         kwargs[key.lower()] = value
@@ -183,6 +184,17 @@ class _SocialState(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key.lower(), value)
+
+
+def _get_handler(clazz_name, config, callback):
+    return get_class_from_string(clazz_name)(callback=callback, **config)
+
+
+def _get_token():
+    # Social doesn't use the builtin remote method calls feature of the
+    # Flask-OAuth extension so we don't need to return a token. This does,
+    # however, need to be configured
+    return None
 
 
 def _create_provider(config, oauth):
@@ -267,13 +279,3 @@ class Social(object):
 
     def __getattr__(self, name):
         return getattr(self._state, name, None)
-
-
-def _get_handler(clazz_name, config, callback):
-    return get_class_from_string(clazz_name)(callback=callback, **config)
-
-def _get_token():
-    # Social doesn't use the builtin remote method calls feature of the
-    # Flask-OAuth extension so we don't need to return a token. This does,
-    # however, need to be configured
-    return None
