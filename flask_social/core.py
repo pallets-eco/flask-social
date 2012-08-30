@@ -215,6 +215,35 @@ def _create_provider(config, oauth):
     return service_provider
 
 
+def _get_provider_configs(app):
+    default_provider_names = get_default_provider_names()
+    provider_configs = []
+
+    # Look for providers in config
+    for key in app.config.keys():
+        if key.startswith('SOCIAL_') and key not in default_config:
+            provider_id = key.replace('SOCIAL_', '').lower()
+
+            if provider_id not in default_provider_names:
+                # Custom provider, grab the whole config
+                provider_configs.append(app.config.get(key))
+                continue
+
+            # Default provider, update with defaults
+            co = 'flask_social.providers.%s::default_config' % provider_id
+
+            d_config = get_class_from_string(co).copy()
+            d_oauth_config = d_config['oauth'].copy()
+
+            d_config.update(app.config[key])
+            d_oauth_config.update(app.config[key]['oauth'])
+            d_config['oauth'] = d_oauth_config
+
+            app.config[key] = d_config
+
+            yield d_config
+
+
 class Social(object):
 
     def __init__(self, app=None, datastore=None):
@@ -237,37 +266,9 @@ class Social(object):
         for key, value in default_config.items():
             app.config.setdefault(key, value)
 
-        default_provider_names = get_default_provider_names()
-
-        provider_configs = []
-
-        # Look for providers in config
-        for key in app.config.keys():
-            if key.startswith('SOCIAL_') and key not in default_config:
-                provider_id = key.replace('SOCIAL_', '').lower()
-
-                if provider_id not in default_provider_names:
-                    # Custom provider, grab the whole config
-                    provider_configs.append(app.config.get(key))
-                    continue
-
-                # Default provider, update with defaults
-                co = 'flask_social.providers.%s::default_config' % provider_id
-
-                d_config = get_class_from_string(co).copy()
-                d_oauth_config = d_config['oauth'].copy()
-
-                d_config.update(app.config[key])
-                d_oauth_config.update(app.config[key]['oauth'])
-                d_config['oauth'] = d_oauth_config
-
-                app.config[key] = d_config
-
-                provider_configs.append(d_config)
-
         providers = dict()
 
-        for p in provider_configs:
+        for p in _get_provider_configs(app):
             provider = _create_provider(p, self.oauth)
             providers[provider.id] = provider
 
