@@ -46,7 +46,6 @@ def login(provider_id):
     post_login = request.form.get('next', get_post_login_redirect())
     session['post_oauth_login_url'] = post_login
     remote_app = get_remote_app(provider_id)
-    print remote_app
     return remote_app.authorize(callback_url)
 
 
