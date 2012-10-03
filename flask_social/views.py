@@ -13,7 +13,8 @@ from flask import Blueprint, current_app, redirect, request, session, \
      after_this_request
 from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect, login_user, \
-     get_url, anonymous_user_required, do_flash
+     get_url, do_flash
+from flask.ext.security.decorators import anonymous_user_required
 from werkzeug.local import LocalProxy
 
 from .signals import social_connection_removed, \
