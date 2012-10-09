@@ -66,6 +66,7 @@ def create_app(config, debug=True):
             'profile.html',
             content='Profile Page',
             twitter_conn=get_remote_app('twitter').get_connection(),
+            google_conn=get_remote_app('google').get_connection(),
             facebook_conn=get_remote_app('facebook').get_connection(),
             foursquare_conn=get_remote_app('foursquare').get_connection())
 

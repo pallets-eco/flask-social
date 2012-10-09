@@ -33,10 +33,7 @@ default_config = {
         'access_token_params': {
             'grant_type': 'authorization_code'
         },
-        'request_token_url': None,
-        'request_token_params': {
-            'response_type': 'code'
-        },
+        'request_token_url': None
     }
 }
 

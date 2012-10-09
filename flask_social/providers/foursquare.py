@@ -30,10 +30,7 @@ default_config = {
         'authorize_url': 'https://foursquare.com/oauth2/authenticate',
         'access_token_params': {
             'grant_type': 'authorization_code'
-        },
-        'request_token_params': {
-            'response_type': 'code'
-        },
+        }
     }
 }
 
@@ -87,7 +84,7 @@ class FoursquareConnectHandler(ConnectHandler):
         access_token = response['access_token']
         api = foursquare.Foursquare(access_token=access_token)
         user = api.users()['user']
-        profile_url = user['canonicalUrl']
+        profile_url = 'http://www.foursquare.com/user/' + user['id']
         image_url = user['photo']
 
         return dict(

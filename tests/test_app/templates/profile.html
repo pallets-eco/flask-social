@@ -28,3 +28,12 @@
 <form action="{{ url_for('flask_social.connect', provider_id='foursquare') }}" name='foursquare_connect_form' method="POST">
   <input type="submit" name="connect_foursquare" value="Connect with foursquare" />
 </form>
+
+{% if google_conn %}
+<form action="{{ url_for('flask_social.remove_connection', provider_id='google', provider_user_id=google_conn.provider_user_id) }}?__METHOD__=DELETE" name='google_disconnect_form' method="POST">
+  <input type="submit" name="disconnect_google" value="Remove google Connection" />
+</form>
+{% endif %}
+<form action="{{ url_for('flask_social.connect', provider_id='google') }}" name='google_connect_form' method="POST">
+  <input type="submit" name="connect_google" value="Connect with google" />
+</form>
