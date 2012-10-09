@@ -17,9 +17,8 @@ from flask.ext.security.utils import get_post_login_redirect, login_user, \
 from flask.ext.security.decorators import anonymous_user_required
 from werkzeug.local import LocalProxy
 
-from .signals import social_connection_removed, \
-     social_connection_created, social_connection_failed, \
-     social_login_completed, social_login_failed
+from .signals import connection_removed, connection_created, \
+     connection_failed, login_completed, login_failed
 from .utils import config_value, get_display_name, get_authorize_callback, \
      get_remote_app
 
@@ -65,14 +64,14 @@ def login_handler(**kwargs):
         key = _social.post_oauth_login_session_key
         redirect_url = session.pop(key, get_post_login_redirect())
 
-        social_login_completed.send(current_app._get_current_object(),
-                                    provider_id=provider_id, user=user)
+        login_completed.send(current_app._get_current_object(),
+                             provider_id=provider_id, user=user)
 
         return redirect(redirect_url)
 
-    social_login_failed.send(current_app._get_current_object(),
-                             provider_id=provider_id,
-                             oauth_response=oauth_response)
+    login_failed.send(current_app._get_current_object(),
+                      provider_id=provider_id,
+                      oauth_response=oauth_response)
 
     next = get_url(_security.login_manager.login_view)
     msg = '%s account not associated with an existing user' % display_name
@@ -105,20 +104,21 @@ def connect_handler(cv, user_id=None):
         after_this_request(_commit)
         connection = _datastore.create_connection(**cv)
         msg = ('Connection established to %s' % display_name, 'success')
-        social_connection_created.send(current_app._get_current_object(),
-                                       user=current_user._get_current_object(),
-                                       connection=connection)
+        connection_created.send(current_app._get_current_object(),
+                                user=current_user._get_current_object(),
+                                connection=connection)
     else:
         msg = ('A connection is already established with %s '
                'to your account' % display_name, 'notice')
-        social_connection_failed.send(current_app._get_current_object(),
-                                      user=current_user._get_current_object())
+        connection_failed.send(current_app._get_current_object(),
+                               user=current_user._get_current_object())
 
     redirect_url = session.pop(config_value('POST_OAUTH_CONNECT_SESSION_KEY'),
                                get_url(config_value('CONNECT_ALLOW_VIEW')))
 
     do_flash(*msg)
     return redirect(redirect_url)
+
 
 @login_required
 def remove_all_connections(provider_id):
@@ -133,9 +133,9 @@ def remove_all_connections(provider_id):
     if deleted:
         after_this_request(_commit)
         msg = ('All connections to %s removed' % display_name, 'info')
-        social_connection_removed.send(current_app._get_current_object(),
-                                       user=current_user._get_current_object(),
-                                       provider_id=provider_id)
+        connection_removed.send(current_app._get_current_object(),
+                                user=current_user._get_current_object(),
+                                provider_id=provider_id)
     else:
         msg = ('Unable to remove connection to %(provider)s' % ctx, 'error')
 
@@ -160,9 +160,9 @@ def remove_connection(provider_id, provider_user_id):
     if deleted:
         after_this_request(_commit)
         msg = ('Connection to %(provider)s removed' % ctx, 'info')
-        social_connection_removed.send(current_app._get_current_object(),
-                                       user=current_user._get_current_object(),
-                                       provider_id=provider_id)
+        connection_removed.send(current_app._get_current_object(),
+                                user=current_user._get_current_object(),
+                                provider_id=provider_id)
     else:
         msg = ('Unabled to remove connection to %(provider)s' % ctx, 'error')
 

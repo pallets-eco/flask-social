@@ -13,5 +13,5 @@
 from .core import Social
 from .datastore import SQLAlchemyConnectionDatastore, \
      MongoEngineConnectionDatastore
-from .signals import social_connection_created, social_connection_failed, \
-     social_connection_removed, social_login_failed, social_login_completed
+from .signals import connection_created, connection_failed, login_failed, \
+     connection_removed, login_completed
