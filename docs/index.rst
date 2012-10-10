@@ -88,25 +88,15 @@ to configure your application with your provider's application values
 **Facebook**::
 
     app.config['SOCIAL_FACEBOOK'] = {
-        {
         'consumer_key': 'facebook app id',
-        'consumer_secret': 'facebook app secret',
-        'request_token_params': {
-            'scope': 'email'
-        }
+        'consumer_secret': 'facebook app secret'
     }
 
 **foursquare**::
 
     app.config['SOCIAL_FOURSQUARE'] = {
         'consumer_key': 'client id',
-        'consumer_secret': 'client secret',
-        'request_token_params': {
-            'response_type': 'code'
-        },
-        'access_token_params': {
-            'grant_type': 'authorization_code'
-        }
+        'consumer_secret': 'client secret'
     }
 
 Next you'll want to setup the `Social` extension and give it an instance of
