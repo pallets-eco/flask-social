@@ -2,7 +2,6 @@
 
 from flask import Flask, render_template, current_app
 from flask.ext.security import login_required
-from flask.ext.social.utils import get_remote_app
 from werkzeug import url_decode
 
 
@@ -62,12 +61,15 @@ def create_app(config, debug=True):
     @app.route('/profile')
     @login_required
     def profile():
+        twitter = current_app.social.twitter
+        twitter.get_api()
+
         return render_template(
             'profile.html',
             content='Profile Page',
-            twitter_conn=get_remote_app('twitter').get_connection(),
-            google_conn=get_remote_app('google').get_connection(),
-            facebook_conn=get_remote_app('facebook').get_connection(),
-            foursquare_conn=get_remote_app('foursquare').get_connection())
+            twitter_conn=twitter.get_connection(),
+            google_conn=current_app.social.google.get_connection(),
+            facebook_conn=current_app.social.facebook.get_connection(),
+            foursquare_conn=current_app.social.foursquare.get_connection())
 
     return app

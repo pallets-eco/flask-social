@@ -39,7 +39,7 @@ def create_app(auth_config=None, debug=True):
             return Connection.objects(user_id=str(self.id))
 
     class Connection(db.Document):
-        user_id = db.StringField(max_length=255)
+        user_id = db.ObjectIdField()
         provider_id = db.StringField(max_length=255)
         provider_user_id = db.StringField(max_length=255)
         access_token = db.StringField(max_length=255)

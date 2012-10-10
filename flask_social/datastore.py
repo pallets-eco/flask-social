@@ -66,6 +66,7 @@ class SQLAlchemyConnectionDatastore(SQLAlchemyDatastore, ConnectionDatastore):
     def find_connections(self, **kwargs):
         return self._query(**kwargs)
 
+
 class MongoEngineConnectionDatastore(MongoEngineDatastore, ConnectionDatastore):
     """A MongoEngine datastore implementation for Flask-Social."""
 

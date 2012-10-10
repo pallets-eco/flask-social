@@ -59,6 +59,7 @@ def create_app(config=None, debug=True):
         db.drop_all()
         db.create_all()
         populate_data()
+        pass
 
     return app
 

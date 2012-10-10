@@ -8,9 +8,10 @@
     :copyright: (c) 2012 by Matt Wright.
     :license: MIT, see LICENSE for more details.
 """
+from importlib import import_module
 
 from flask import Blueprint, current_app, redirect, request, session, \
-     after_this_request
+     after_this_request, abort
 from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect, login_user, \
      get_url, do_flash
@@ -19,8 +20,7 @@ from werkzeug.local import LocalProxy
 
 from .signals import connection_removed, connection_created, \
      connection_failed, login_completed, login_failed
-from .utils import config_value, get_display_name, get_authorize_callback, \
-     get_remote_app
+from .utils import config_value, get_provider_or_404, get_authorize_callback
 
 
 # Convenient references
@@ -41,83 +41,22 @@ def _commit(response=None):
 @anonymous_user_required
 def login(provider_id):
     """Starts the provider login OAuth flow"""
-
+    provider = get_provider_or_404(provider_id)
     callback_url = get_authorize_callback('login', provider_id)
     post_login = request.form.get('next', get_post_login_redirect())
     session['post_oauth_login_url'] = post_login
-    remote_app = get_remote_app(provider_id)
-    return remote_app.authorize(callback_url)
-
-
-@anonymous_user_required
-def login_handler(**kwargs):
-    """Shared method to handle the signin process"""
-
-    provider_id = kwargs['provider_id']
-    oauth_response = kwargs.pop('oauth_response')
-    display_name = get_display_name(provider_id)
-    connection = _datastore.find_connection(**kwargs)
-
-    if connection:
-        user = connection.user
-        login_user(user)
-        key = _social.post_oauth_login_session_key
-        redirect_url = session.pop(key, get_post_login_redirect())
-
-        login_completed.send(current_app._get_current_object(),
-                             provider_id=provider_id, user=user)
-
-        return redirect(redirect_url)
-
-    login_failed.send(current_app._get_current_object(),
-                      provider_id=provider_id,
-                      oauth_response=oauth_response)
-
-    next = get_url(_security.login_manager.login_view)
-    msg = '%s account not associated with an existing user' % display_name
-    do_flash(msg, 'error')
-    return redirect(next)
+    return provider.authorize(callback_url)
 
 
 @login_required
 def connect(provider_id):
     """Starts the provider connection OAuth flow"""
+    provider = get_provider_or_404(provider_id)
     callback_url = get_authorize_callback('connect', provider_id)
     allow_view = get_url(config_value('CONNECT_ALLOW_VIEW'))
     pc = request.form.get('next', allow_view)
     session[config_value('POST_OAUTH_CONNECT_SESSION_KEY')] = pc
-    return get_remote_app(provider_id).authorize(callback_url)
-
-
-def connect_handler(cv, user_id=None):
-    """Shared method to handle the connection process
-
-    :param connection_values: A dictionary containing the connection values
-    :param provider_id: The provider ID the connection shoudl be made to
-    """
-    provider_id = cv['provider_id']
-    display_name = get_display_name(provider_id)
-    cv['user_id'] = user_id or current_user.get_id()
-    connection = _datastore.find_connection(**cv)
-
-    if connection is None:
-        after_this_request(_commit)
-        connection = _datastore.create_connection(**cv)
-        msg = ('Connection established to %s' % display_name, 'success')
-        connection_created.send(current_app._get_current_object(),
-                                user=current_user._get_current_object(),
-                                connection=connection)
-    else:
-        msg = ('A connection is already established with %s '
-               'to your account' % display_name, 'notice')
-        connection_failed.send(current_app._get_current_object(),
-                               user=current_user._get_current_object())
-
-    redirect_url = session.pop(config_value('POST_OAUTH_CONNECT_SESSION_KEY'),
-                               get_url(config_value('CONNECT_ALLOW_VIEW')))
-
-    do_flash(*msg)
-    return redirect(redirect_url)
+    return provider.authorize(callback_url)
 
 
 @login_required
@@ -125,14 +64,15 @@ def remove_all_connections(provider_id):
     """Remove all connections for the authenticated user to the
     specified provider
     """
-    display_name = get_display_name(provider_id)
-    ctx = dict(provider=display_name, user=current_user)
+    provider = get_provider_or_404(provider_id)
+
+    ctx = dict(provider=provider.name, user=current_user)
 
     deleted = _datastore.delete_connections(user_id=current_user.get_id(),
                                             provider_id=provider_id)
     if deleted:
         after_this_request(_commit)
-        msg = ('All connections to %s removed' % display_name, 'info')
+        msg = ('All connections to %s removed' % provider.name, 'info')
         connection_removed.send(current_app._get_current_object(),
                                 user=current_user._get_current_object(),
                                 provider_id=provider_id)
@@ -148,9 +88,9 @@ def remove_connection(provider_id, provider_user_id):
     """Remove a specific connection for the authenticated user to the
     specified provider
     """
-    display_name = get_display_name(provider_id)
+    provider = get_provider_or_404(provider_id)
 
-    ctx = dict(provider=display_name, user=current_user,
+    ctx = dict(provider=provider.name, user=current_user,
                provider_user_id=provider_user_id)
 
     deleted = _datastore.delete_connection(user_id=current_user.get_id(),
@@ -170,31 +110,103 @@ def remove_connection(provider_id, provider_user_id):
     return redirect(request.referrer)
 
 
-def configure_provider(provider, blueprint, oauth):
-    """Configures and registers a service provider connection Factory with the
-    main application.
+def connect_handler(cv, provider):
+    """Shared method to handle the connection process
+
+    :param connection_values: A dictionary containing the connection values
+    :param provider_id: The provider ID the connection shoudl be made to
     """
-    provider_id = provider.id
+    cv['user_id'] = current_user.get_id()
+    connection = _datastore.find_connection(**cv)
 
-    @blueprint.route('/connect/%s' % provider_id, methods=['GET'],
-                     endpoint='connect_%s_callback' % provider_id)
-    @login_required
-    @provider.authorized_handler
-    def connect_callback(response):
-        """The route which the provider should redirect to after a user
-        attempts to connect their account with the provider with their local
-        application account
-        """
-        return provider.connect_handler(response)
+    if connection is None:
+        after_this_request(_commit)
+        connection = _datastore.create_connection(**cv)
+        msg = ('Connection established to %s' % provider.name, 'success')
+        connection_created.send(current_app._get_current_object(),
+                                user=current_user._get_current_object(),
+                                connection=connection)
+    else:
+        msg = ('A connection is already established with %s '
+               'to your account' % provider.name, 'notice')
+        connection_failed.send(current_app._get_current_object(),
+                               user=current_user._get_current_object())
 
-    @blueprint.route('/login/%s' % provider_id, methods=['GET'],
-                     endpoint='login_%s_callback' % provider_id)
-    @provider.authorized_handler
-    def login_callback(response):
-        """The route which the provider should redirect to after a user
-        attempts to login with their account with the provider
-        """
-        return provider.login_handler(response)
+    redirect_url = session.pop(config_value('POST_OAUTH_CONNECT_SESSION_KEY'),
+                               get_url(config_value('CONNECT_ALLOW_VIEW')))
+
+    do_flash(*msg)
+    return redirect(redirect_url)
+
+
+def connect_callback(provider_id):
+    try:
+        provider = _social.providers[provider_id]
+        module = import_module(provider.module)
+    except KeyError:
+        abort(404)
+
+    def connect(response):
+        if response is None:
+            do_flash('Access was denied by %s' % provider.name, 'error')
+            return redirect(get_url(config_value('CONNECT_DENY_VIEW')))
+
+        return module.get_connection_values(response,
+                    consumer_key=provider.consumer_key,
+                    consumer_secret=provider.consumer_secret)
+
+    return connect_handler(provider.authorized_handler(connect)(), provider)
+
+
+@anonymous_user_required
+def login_handler(response, provider, query):
+    """Shared method to handle the signin process"""
+
+    connection = _datastore.find_connection(**query)
+
+    if connection:
+        user = connection.user
+        login_user(user)
+        key = _social.post_oauth_login_session_key
+        redirect_url = session.pop(key, get_post_login_redirect())
+
+        login_completed.send(current_app._get_current_object(),
+                             provider=provider, user=user)
+
+        return redirect(redirect_url)
+
+    login_failed.send(current_app._get_current_object(),
+                      provider=provider,
+                      oauth_response=response)
+
+    next = get_url(_security.login_manager.login_view)
+    msg = '%s account not associated with an existing user' % provider.name
+    do_flash(msg, 'error')
+    return redirect(next)
+
+
+def login_callback(provider_id):
+    try:
+        provider = _social.providers[provider_id]
+        module = import_module(provider.module)
+    except KeyError:
+        abort(404)
+
+    def login(response):
+        _logger.debug('Received login response from '
+                      '%s: %s' % (provider.name, response))
+
+        if response is None:
+            do_flash('Access was denied to your %s '
+                     'account' % provider.name, 'error')
+            return redirect(_security.login_manager.login_view)
+
+        query = dict(provider_user_id=module.get_provider_user_id(response))
+
+        return response, query
+
+    response, query = provider.authorized_handler(login)()
+    return login_handler(response, provider, query)
 
 
 def create_blueprint(state, import_name):
@@ -202,8 +214,12 @@ def create_blueprint(state, import_name):
                    url_prefix=state.url_prefix,
                    template_folder='templates')
 
+    bp.route('/login/<provider_id>')(login_callback)
+
     bp.route('/login/<provider_id>',
              methods=['POST'])(login)
+
+    bp.route('/connect/<provider_id>')(connect_callback)
 
     bp.route('/connect/<provider_id>',
              methods=['POST'])(connect)
@@ -213,8 +229,5 @@ def create_blueprint(state, import_name):
 
     bp.route('/connect/<provider_id>/<provider_user_id>',
              methods=['DELETE'])(remove_connection)
-
-    for key, provider in state.providers.items():
-        configure_provider(provider, bp, state.oauth)
 
     return bp
