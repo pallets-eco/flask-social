@@ -22,6 +22,9 @@ config = {
     'request_token_url': None,
     'access_token_url': '/oauth/access_token',
     'authorize_url': 'https://www.facebook.com/dialog/oauth',
+    'request_token_params': {
+        'scope': 'email'
+    }
 }
 
 

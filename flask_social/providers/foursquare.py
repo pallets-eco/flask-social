@@ -24,6 +24,9 @@ config = {
     'authorize_url': 'https://foursquare.com/oauth2/authenticate',
     'access_token_params': {
         'grant_type': 'authorization_code'
+    },
+    'request_token_params': {
+        'response_type': 'code'
     }
 }
 

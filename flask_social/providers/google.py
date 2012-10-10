@@ -28,6 +28,10 @@ config = {
     'access_token_method': 'POST',
     'access_token_params': {
         'grant_type': 'authorization_code'
+    },
+    'request_token_params': {
+        'response_type': 'code',
+        'scope': 'https://www.googleapis.com/auth/plus.me'
     }
 }
 
