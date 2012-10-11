@@ -1,21 +1,25 @@
 """
 Flask-Social
---------------
+============
 
-Simple OAuth provider integration for Flask-Security.
+Oauth provider login and APIs for use with
+`Flask-Security <http://packages.python.org/Flask-Security/>`_
 
-Links
-`````
+Resources
+---------
 
-* `development version
-  <https://github.com/mattupstate/flask-social/raw/develop#egg=Flask-Social-dev>`_
+- `Documentation <http://packages.python.org/Flask-Social/>`_
+- `Issue Tracker <http://github.com/mattupstate/flask-social/issues>`_
+- `Code <http://github.com/mattupstate/flask-social/>`_
+- `Development Version
+  <http://github.com/mattupstate/flask-rq/zipball/develop#egg=Flask-Social-dev>`_
 
 """
 from setuptools import setup
 
 setup(
     name='Flask-Social',
-    version='1.0.0',
+    version='1.1.0-dev',
     url='https://github.com/mattupstate/flask-social',
     license='MIT',
     author='Matthew Wright',
@@ -24,14 +28,14 @@ setup(
     long_description=__doc__,
     packages=[
         'flask_social',
-        'flask_social.datastore'
+        'flask_social.providers'
     ],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
     install_requires=[
-        'Flask-Security',
-        'Flask-Oauth'
+        'Flask-Security==1.3.0-dev',
+        'Flask-OAuth==0.12'
     ],
     test_suite='nose.collector',
     tests_require=[
@@ -41,7 +45,7 @@ setup(
         'Flask-MongoEngine'
     ],
     dependency_links=[
-        'http://github.com/sbook/flask-mongoengine/tarball/master#egg=Flask-MongoEngine-0.1.3-dev'
+        'http://github.com/mattupstate/flask-security/tarball/develop#egg=Flask-Security-1.3.0-dev'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

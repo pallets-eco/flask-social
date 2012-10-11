@@ -5,7 +5,7 @@
 .project
 .pydevproject
 .settings
-example/config.py
+config.py
 build
 _build
 dist
