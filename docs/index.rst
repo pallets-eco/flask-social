@@ -141,14 +141,12 @@ add a mechanism on the profile page to do so. First the view method::
     @app.route('/profile')
     @login_required
     def profile():
-        s = current_app.social
-
         return render_template(
             'profile.html',
             content='Profile Page',
-            twitter_conn=s.twitter.get_connection(),
-            facebook_conn=s.facebook.get_connection(),
-            foursquare_conn=s.foursquare.get_connection())
+            twitter_conn=social.twitter.get_connection(),
+            facebook_conn=social.facebook.get_connection(),
+            foursquare_conn=social.foursquare.get_connection())
 
 You should notice the mechanism for retreiving the current user's connection
 with each service provider. If a connection is not found, the value will be
@@ -220,9 +218,9 @@ to install the appropriate library for this functionality to work.
 
 Configured instances of an API client are available via the `get_api` method
 of the provider instance. For example, lets say you wany to post the current
-user's Twitter feed:
+user's Twitter feed::
 
-    social = FlaskSocial(...)
+    social = Social(...)
 
     @app.route('/profile')
     def profile():
