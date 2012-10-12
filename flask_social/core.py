@@ -129,11 +129,11 @@ class Social(object):
                 module = import_module('flask_social.providers.' + provider_id)
                 module.config = RecursiveDictionary(module.config)
                 module.config.rec_update(config)
-                updated_config = module.config
+                config = module.config
             except ImportError:
                 pass
 
-            providers[provider_id] = OAuthRemoteApp(**updated_config)
+            providers[provider_id] = OAuthRemoteApp(**config)
             providers[provider_id].tokengetter(_get_token)
 
         state = _get_state(app, datastore, providers)
