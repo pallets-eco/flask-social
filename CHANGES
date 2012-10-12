@@ -3,6 +3,15 @@ Flask-Social Changelog
 
 Here you can see the full list of changes between each Flask-Social release.
 
+Version 1.5.1
+-------------
+
+Released October 12 2012
+
+- Change default blueprint name to 'social' to match up with 'security'
+- Ensure commit is called after social login
+- Abstract a bit of the connection callback for more flexibility. See the example app
+
 Version 1.5.0
 -------------
 
