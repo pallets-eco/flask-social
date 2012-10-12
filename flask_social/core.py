@@ -27,7 +27,7 @@ _datastore = LocalProxy(lambda: _social.datastore)
 _logger = LocalProxy(lambda: current_app.logger)
 
 default_config = {
-    'SOCIAL_BLUEPRINT_NAME': 'flask_social',
+    'SOCIAL_BLUEPRINT_NAME': 'social',
     'SOCIAL_URL_PREFIX': None,
     'SOCIAL_CONNECT_ALLOW_VIEW': '/',
     'SOCIAL_CONNECT_DENY_VIEW': '/',

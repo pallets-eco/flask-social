@@ -8,6 +8,7 @@
     :copyright: (c) 2012 by Matt Wright.
     :license: MIT, see LICENSE for more details.
 """
+from importlib import import_module
 
 from flask import current_app, url_for, request, abort
 
@@ -29,8 +30,20 @@ def get_authorize_callback(endpoint, provider_id):
 
     param: endpoint: Absolute path to append to the application's host
     """
-    url = url_for('flask_social.' + endpoint, provider_id=provider_id)
+    endpoint_prefix = config_value('BLUEPRINT_NAME')
+    url = url_for(endpoint_prefix + '.' + endpoint, provider_id=provider_id)
     return request.url_root[:-1] + url
+
+
+def get_conection_values_from_oauth_response(provider, oauth_response):
+    if oauth_response is None:
+        return None
+
+    module = import_module(provider.module)
+
+    return module.get_connection_values(oauth_response,
+                consumer_key=provider.consumer_key,
+                consumer_secret=provider.consumer_secret)
 
 
 def get_config(app):

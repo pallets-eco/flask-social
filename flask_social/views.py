@@ -20,7 +20,8 @@ from werkzeug.local import LocalProxy
 
 from .signals import connection_removed, connection_created, \
      connection_failed, login_completed, login_failed
-from .utils import config_value, get_provider_or_404, get_authorize_callback
+from .utils import config_value, get_provider_or_404, get_authorize_callback, \
+     get_conection_values_from_oauth_response
 
 
 # Convenient references
@@ -116,7 +117,7 @@ def connect_handler(cv, provider):
     :param connection_values: A dictionary containing the connection values
     :param provider_id: The provider ID the connection shoudl be made to
     """
-    cv['user_id'] = current_user.get_id()
+    cv.setdefault('user_id', current_user.get_id())
     connection = _datastore.find_connection(**cv)
 
     if connection is None:
@@ -140,20 +141,14 @@ def connect_handler(cv, provider):
 
 
 def connect_callback(provider_id):
-    try:
-        provider = _social.providers[provider_id]
-        module = import_module(provider.module)
-    except KeyError:
-        abort(404)
+    provider = get_provider_or_404(provider_id)
 
     def connect(response):
-        if response is None:
+        cv = get_conection_values_from_oauth_response(provider, response)
+        if cv is None:
             do_flash('Access was denied by %s' % provider.name, 'error')
             return redirect(get_url(config_value('CONNECT_DENY_VIEW')))
-
-        return module.get_connection_values(response,
-                    consumer_key=provider.consumer_key,
-                    consumer_secret=provider.consumer_secret)
+        return cv
 
     return connect_handler(provider.authorized_handler(connect)(), provider)
 
@@ -165,6 +160,7 @@ def login_handler(response, provider, query):
     connection = _datastore.find_connection(**query)
 
     if connection:
+        after_this_request(_commit)
         user = connection.user
         login_user(user)
         key = _social.post_oauth_login_session_key
