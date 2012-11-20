@@ -17,7 +17,7 @@ config = {
     'id': 'facebook',
     'name': 'Facebook',
     'install': 'pip install http://github.com/pythonforfacebook/facebook-sdk/tarball/master',
-    'module': 'flask.ext.social.providers.facebook',
+    'module': 'flask_social.providers.facebook',
     'base_url': 'https://graph.facebook.com/',
     'request_token_url': None,
     'access_token_url': '/oauth/access_token',
