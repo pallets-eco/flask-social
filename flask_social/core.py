@@ -124,9 +124,11 @@ class Social(object):
                 continue
 
             provider_id = key.lower().replace('social_', '')
+            if "module" not in config:
+                config["module"] = "flask_social.providers."+ provider_id
 
             try:
-                module = import_module('flask_social.providers.' + provider_id)
+                module = import_module(config["module"] )
                 module.config = RecursiveDictionary(module.config)
                 module.config.rec_update(config)
                 config = module.config
