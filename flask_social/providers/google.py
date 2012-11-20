@@ -19,7 +19,7 @@ config = {
     'id': 'google',
     'name': 'Google',
     'install': 'pip install google-api-python-client',
-    'module': 'flask.ext.social.providers.google',
+    'module': 'flask_social.providers.google',
 
     'base_url': 'https://www.google.com/accounts/',
     'authorize_url': 'https://accounts.google.com/o/oauth2/auth',

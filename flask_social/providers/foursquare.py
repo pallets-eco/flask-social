@@ -17,7 +17,7 @@ config = {
     'id': 'foursquare',
     'name': 'foursquare',
     'install': 'pip install foursquare',
-    'module': 'flask.ext.social.providers.foursquare',
+    'module': 'flask_social.providers.foursquare',
     'base_url': 'https://api.foursquare.com/v2/',
     'request_token_url': None,
     'access_token_url': 'https://foursquare.com/oauth2/access_token',
