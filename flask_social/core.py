@@ -42,7 +42,6 @@ class OAuthRemoteApp(BaseRemoteApp):
         BaseRemoteApp.__init__(self, None, **kwargs)
         self.id = id
         self.module = module
-        self.install = install
 
     def get_connection(self):
         return _social.datastore.find_connection(provider_id=self.id,
@@ -123,20 +122,16 @@ class Social(object):
             if not key.startswith('SOCIAL_') or key in default_config:
                 continue
 
-            provider_id = key.lower().replace('social_', '')
-            if "module" not in config:
-                config["module"] = "flask_social.providers."+ provider_id
+            config = RecursiveDictionary(config)
+            suffix = key.lower().replace('social_', '')
+            default_module_name = 'flask_social.providers.%s' % suffix
+            module_name = config.get('module', default_module_name)
 
-            try:
-                module = import_module(config["module"] )
-                module.config = RecursiveDictionary(module.config)
-                module.config.rec_update(config)
-                config = module.config
-            except ImportError:
-                pass
+            module = import_module(module_name)
+            config.rec_update(module.config)
 
-            providers[provider_id] = OAuthRemoteApp(**config)
-            providers[provider_id].tokengetter(_get_token)
+            providers[config['id']] = OAuthRemoteApp(**config)
+            providers[config['id']].tokengetter(_get_token)
 
         state = _get_state(app, datastore, providers)
 

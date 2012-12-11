@@ -12,11 +12,9 @@ class SocialTest(unittest.TestCase):
 
     def setUp(self):
         super(SocialTest, self).setUp()
-
         self.app = self._create_app(self.SOCIAL_CONFIG or None)
         self.app.debug = False
         self.app.config['TESTING'] = True
-
         self.client = self.app.test_client()
 
     def _create_app(self, auth_config):

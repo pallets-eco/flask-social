@@ -18,7 +18,6 @@ config = {
     'name': 'Twitter',
     'install': 'pip install python-twitter',
     'module': 'flask_social.providers.twitter',
-
     'base_url': 'http://api.twitter.com/1/',
     'request_token_url': 'https://api.twitter.com/oauth/request_token',
     'access_token_url': 'https://api.twitter.com/oauth/access_token',

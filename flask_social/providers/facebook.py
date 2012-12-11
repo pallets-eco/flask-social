@@ -16,7 +16,7 @@ import facebook
 config = {
     'id': 'facebook',
     'name': 'Facebook',
-    'install': 'pip install http://github.com/pythonforfacebook/facebook-sdk/tarball/master',
+    'install': 'pip install facebook-sdk',
     'module': 'flask_social.providers.facebook',
     'base_url': 'https://graph.facebook.com/',
     'request_token_url': None,
