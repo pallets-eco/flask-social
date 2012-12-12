@@ -3,6 +3,13 @@ Flask-Social Changelog
 
 Here you can see the full list of changes between each Flask-Social release.
 
+Version 1.5.3
+-------------
+
+Released December 12 2012
+
+- Fix small bug with default configuration
+
 Version 1.5.2
 -------------
 

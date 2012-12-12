@@ -32,7 +32,8 @@ default_config = {
     'SOCIAL_CONNECT_ALLOW_VIEW': '/',
     'SOCIAL_CONNECT_DENY_VIEW': '/',
     'SOCIAL_POST_OAUTH_CONNECT_SESSION_KEY': 'post_oauth_connect_url',
-    'SOCIAL_POST_OAUTH_LOGIN_SESSION_KEY': 'post_oauth_login_url'
+    'SOCIAL_POST_OAUTH_LOGIN_SESSION_KEY': 'post_oauth_login_url',
+    'SOCIAL_APP_URL': 'http://localhost'
 }
 
 
