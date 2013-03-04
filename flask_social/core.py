@@ -15,7 +15,7 @@ from flask.ext.oauth import OAuthRemoteApp as BaseRemoteApp
 from flask.ext.security import current_user
 from werkzeug.local import LocalProxy
 
-from .utils import get_config, RecursiveDictionary
+from .utils import get_config, update_recursive
 from .views import create_blueprint
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
@@ -123,13 +123,11 @@ class Social(object):
             if not key.startswith('SOCIAL_') or key in default_config:
                 continue
 
-            config = RecursiveDictionary(config)
             suffix = key.lower().replace('social_', '')
             default_module_name = 'flask_social.providers.%s' % suffix
             module_name = config.get('module', default_module_name)
-
             module = import_module(module_name)
-            config.rec_update(module.config)
+            config = update_recursive(module.config, config)
 
             providers[config['id']] = OAuthRemoteApp(**config)
             providers[config['id']].tokengetter(_get_token)

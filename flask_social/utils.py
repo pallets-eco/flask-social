@@ -8,6 +8,8 @@
     :copyright: (c) 2012 by Matt Wright.
     :license: MIT, see LICENSE for more details.
 """
+import collections
+
 from importlib import import_module
 
 from flask import current_app, url_for, request, abort
@@ -61,32 +63,11 @@ def get_config(app):
     return dict([strip_prefix(i) for i in items if i[0].startswith(prefix)])
 
 
-class RecursiveDictionary(dict):
-    """RecursiveDictionary provides the methods rec_update and iter_rec_update
-    that can be used to update member dictionaries rather than overwriting
-    them."""
-    def rec_update(self, other, **third):
-        """Recursively update the dictionary with the contents of other and
-        third like dict.update() does - but don't overwrite sub-dictionaries.
-
-        Example:
-        >>> d = RecursiveDictionary({'foo': {'bar': 42}})
-        >>> d.rec_update({'foo': {'baz': 36}})
-        >>> d
-        {'foo': {'baz': 36, 'bar': 42}}
-        """
-        try:
-            iterator = other.iteritems()
-        except AttributeError:
-            iterator = other
-        self.iter_rec_update(iterator)
-        self.iter_rec_update(third.iteritems())
-
-    def iter_rec_update(self, iterator):
-        for (key, value) in iterator:
-            if key in self and \
-               isinstance(self[key], dict) and isinstance(value, dict):
-                self[key] = RecursiveDictionary(self[key])
-                self[key].rec_update(value)
-            else:
-                self[key] = value
+def update_recursive(d, u):
+    for k, v in u.iteritems():
+        if isinstance(v, collections.Mapping):
+            r = update_recursive(d.get(k, {}), v)
+            d[k] = r
+        else:
+            d[k] = u[k]
+    return d

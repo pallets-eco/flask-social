@@ -1,22 +1,25 @@
 
 class Config(object):
+
     SOCIAL_TWITTER = {
-        'oauth': {
-            'consumer_key': 'twitter consumer key',
-            'consumer_secret': 'twitter consumer secret'
-        }
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
     }
-    
+
     SOCIAL_FACEBOOK = {
-        'oauth': {
-            'consumer_key': 'facebook app id',
-            'consumer_secret': 'facebook app secret',
-            'request_token_params': {
-                'scope': 'email'
-            }
-        }
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
     }
-    
-    # For running the tests...
-    TWITTER_USERNAME = 'your twitter username'
-    TWITTER_PASSWORD = 'your twitter password'
+
+    SOCIAL_FOURSQUARE = {
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
+    }
+
+    SOCIAL_GOOGLE = {
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
+    }
+
+    TWITTER_USERNAME = 'xxxx'
+    TWITTER_PASSWORD = 'xxxx'
