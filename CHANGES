@@ -10,7 +10,7 @@ Version 1.5.5
 Released March 3 2013
 
 - Fixed configuration bug concerning deeper dictionary values
-
+- Fixed facebook display name bug
 
 Version 1.5.4
 -------------
