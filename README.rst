@@ -1,7 +1,9 @@
 Flask-Social
 ============
 
-Oauth provider login and APIs for use with 
+.. image:: https://secure.travis-ci.org/mattupstate/flask-social.png?branch=develop
+
+Oauth provider login and APIs for use with
 `Flask-Security <http://packages.python.org/Flask-Security/>`_
 
 Resources
