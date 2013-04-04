@@ -40,7 +40,7 @@ setup(
     test_suite='nose.collector',
     tests_require=[
         'nose',
-        'Flask-Testing',
+        'mock',
         'Flask-SQLAlchemy',
         'Flask-MongoEngine'
     ],
