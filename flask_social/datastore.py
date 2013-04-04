@@ -10,7 +10,6 @@
 """
 
 from flask_security.datastore import SQLAlchemyDatastore, MongoEngineDatastore
-from mongoengine.queryset import Q, QCombination
 
 
 class ConnectionDatastore(object):
@@ -74,6 +73,7 @@ class MongoEngineConnectionDatastore(MongoEngineDatastore, ConnectionDatastore):
         ConnectionDatastore.__init__(self, connection_model)
 
     def _query(self, **kwargs):
+        from mongoengine.queryset import Q, QCombination
         queries = map(lambda i: Q(**{i[0]: i[1]}), kwargs.items())
         return self.connection_model.objects(QCombination(QCombination.AND, queries))
 
