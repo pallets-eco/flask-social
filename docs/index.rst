@@ -15,11 +15,11 @@ Contents
 Overview
 ========
 
-Essentially, Flask-Social sets up endpoints for your app to make it easy for
-you to let your users connect and/or login using Facebook and Twitter.
-Flask-Social persists the connection information and allows you to get a
-configured instance of an API object with your user's token so you can make API
-calls on behalf of them. Currently Facebook and Twitter are supported out of
+Flask-Social sets up endpoints for your app to make it easy for you to let your
+users connect and/or login using Facebook and Twitter. Flask-Social persists
+the connection information and allows you to get a configured instance of an
+API object with your user's token so you can make API calls on behalf of them.
+Currently Facebook, Twitter, foursquare and Google are supported out of
 the box as long as you install the appropriate API library.
 
 
@@ -53,6 +53,15 @@ Then install your provider API libraries.
 
     $ pip install python-twitter
 
+**foursquare**::
+
+    $ pip install foursquare
+
+
+**Google**::
+
+    $ pip install oauth2client google-api-python-client
+
 
 .. _getting-started:
 
@@ -61,10 +70,11 @@ Getting Started
 
 If you plan on allowing your users to connect with Facebook or Twitter, the
 first thing you'll want to do is register an application with either service
-provider. To create an application with Facebook visit the
-`Facebook Developers <https://developers.facebook.com/>`_ page. To create an
-application with Twitter visit the
-`Twitter Developers <https://dev.twitter.com/>`_ page.
+provider:
+
+* `Facebook <https://developers.facebook.com/>`_
+* `Twitter <https://dev.twitter.com/>`_
+* `foursquare <https://developer.foursquare.com/>`_
 
 Bear in mind that Flask-Social requires Flask-Security. It would be a good idea
 to review the documentation for Flask-Security before moving on here as it
@@ -97,6 +107,13 @@ to configure your application with your provider's application values
     app.config['SOCIAL_FOURSQUARE'] = {
         'consumer_key': 'client id',
         'consumer_secret': 'client secret'
+    }
+
+**Google**::
+
+    SOCIAL_GOOGLE = {
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
     }
 
 Next you'll want to setup the `Social` extension and give it an instance of
@@ -265,19 +282,37 @@ Signals
 See the Flask documentation on signals for information on how to use these
 signals in your code.
 
-.. data:: social_connection_created
+.. data:: connection_created
 
-   Sent when a user successfully authorizes a connection with a service
+   Sent when a user successfully authorizes a connection with a provider
    provider. In addition to the app (which is the sender), it is passed `user`,
-   which is the local user and `connection` which is the connection that was
+   which is the current user and `connection` which is the connection that was
    created
 
-.. data:: social_login_failed
+.. data:: connection_failed
+
+    Sent when a user attempts to authorize a connection with a provider but
+    it fails because it already exists. In addition to the app (which is the
+    sender), it is passed `user`, which is the current user
+
+.. data:: connection_removed
+
+    Sent when a user removes a connection to a provider. In addition to the app
+    (which is the sender), it is passed `user`, which is the current user and
+    `provider_id` which is the ID of the provider that was removed
+
+.. data:: login_failed
 
    Sent when a login attempt via a provider fails. In addition to the app
-   (which is the sender), it is passed `provider_id` which is the service
-   provider ID, and `oauth_response` which is the response returned by the
+   (which is the sender), it is passed `provider` which is the service
+   provider, and `oauth_response` which is the response returned by the
    provider
+
+.. data:: login_completed
+
+   Sent when a login attempt via a provider fails. In addition to the app
+   (which is the sender), it is passed `provider` which is the service
+   provider, and `user` which is the current user
 
 
 Changelog
