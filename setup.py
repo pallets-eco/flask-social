@@ -34,7 +34,7 @@ setup(
     include_package_data=True,
     platforms='any',
     install_requires=[
-        'Flask-Security>=1.5.0',
+        'Flask-Security>=1.6.0',
         'Flask-OAuth>=0.12'
     ],
     test_suite='nose.collector',
@@ -42,7 +42,8 @@ setup(
         'nose',
         'mock',
         'Flask-SQLAlchemy',
-        'Flask-MongoEngine'
+        'Flask-MongoEngine',
+        'Flask-Peewee'
     ],
     dependency_links=[
         'http://github.com/mattupstate/flask-security/tarball/develop#egg=Flask-Security-1.3.0-dev'

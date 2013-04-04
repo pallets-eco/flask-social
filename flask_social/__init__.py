@@ -14,6 +14,6 @@ __version__ = '1.5.5'
 
 from .core import Social
 from .datastore import SQLAlchemyConnectionDatastore, \
-     MongoEngineConnectionDatastore
+     MongoEngineConnectionDatastore, PeeweeConnectionDatastore
 from .signals import connection_created, connection_failed, login_failed, \
      connection_removed, login_completed

@@ -6,6 +6,8 @@ from werkzeug import url_decode
 
 class Config(object):
 
+    CSRF_ENABLED = False
+
     SOCIAL_TWITTER = {
         'consumer_key': 'xxxx',
         'consumer_secret': 'xxxx'

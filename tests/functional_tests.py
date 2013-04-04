@@ -4,6 +4,7 @@ import mock
 
 from tests.test_app.sqlalchemy import create_app as create_sql_app
 from tests.test_app.mongoengine import create_app as create_mongo_app
+from tests.test_app.peewee_app import create_app as create_peewee_app
 
 
 def get_mock_twitter_response():
@@ -49,6 +50,8 @@ class SocialTest(unittest.TestCase):
             return create_sql_app(auth_config, False)
         if app_type == 'mongo':
             return create_mongo_app(auth_config, False)
+        if app_type == 'peewee':
+            return create_peewee_app(auth_config, False)
 
 
 class TwitterSocialTests(SocialTest):
@@ -126,3 +129,7 @@ class TwitterSocialTests(SocialTest):
 
 class MongoEngineTwitterSocialTests(TwitterSocialTests):
     APP_TYPE = 'mongo'
+
+
+class PeeweeTwitterSocialTests(TwitterSocialTests):
+    APP_TYPE = 'peewee'

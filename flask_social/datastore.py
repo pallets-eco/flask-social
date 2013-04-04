@@ -9,7 +9,8 @@
     :license: MIT, see LICENSE for more details.
 """
 
-from flask_security.datastore import SQLAlchemyDatastore, MongoEngineDatastore
+from flask_security.datastore import SQLAlchemyDatastore, MongoEngineDatastore, \
+    PeeweeDatastore
 
 
 class ConnectionDatastore(object):
@@ -80,6 +81,33 @@ class MongoEngineConnectionDatastore(MongoEngineDatastore, ConnectionDatastore):
 
     def find_connection(self, **kwargs):
         return self._query(**kwargs).first()
+
+    def find_connections(self, **kwargs):
+        return self._query(**kwargs)
+
+
+class PeeweeConnectionDatastore(PeeweeDatastore, ConnectionDatastore):
+    """A Peewee datastore implementation for Flask-Social."""
+
+    def __init__(self, db, connection_model):
+        PeeweeDatastore.__init__(self, db)
+        ConnectionDatastore.__init__(self, connection_model)
+
+    def _query(self, **kwargs):
+        if 'user_id' in kwargs:
+            kwargs['user'] = kwargs.pop('user_id')
+        try:
+            return self.connection_model.filter(**kwargs).get()
+        except self.connection_model.DoesNotExist:
+            return None
+
+    def create_connection(self, **kwargs):
+        if 'user_id' in kwargs:
+            kwargs['user'] = kwargs.pop('user_id')
+        return self.put(self.connection_model(**kwargs))
+
+    def find_connection(self, **kwargs):
+        return self._query(**kwargs)
 
     def find_connections(self, **kwargs):
         return self._query(**kwargs)
