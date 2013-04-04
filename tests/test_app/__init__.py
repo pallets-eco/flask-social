@@ -4,6 +4,31 @@ from flask import Flask, render_template, current_app
 from flask.ext.security import login_required
 from werkzeug import url_decode
 
+class Config(object):
+
+    SOCIAL_TWITTER = {
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
+    }
+
+    SOCIAL_FACEBOOK = {
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx',
+        'request_token_params': {
+            'scope': 'email,publish_stream'
+        }
+    }
+
+    SOCIAL_FOURSQUARE = {
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
+    }
+
+    SOCIAL_GOOGLE = {
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
+    }
+
 
 class HTTPMethodOverrideMiddleware(object):
     """The HTTPMethodOverrideMiddleware middleware implements the hidden HTTP
@@ -44,8 +69,6 @@ def create_app(config, debug=True):
     app.debug = debug
     app.config['SECRET_KEY'] = 'secret'
     app.config['SECURITY_POST_LOGIN_VIEW'] = '/profile'
-
-    from tests.test_app.config import Config
     app.config.from_object(Config)
 
     if config:
