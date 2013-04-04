@@ -10,7 +10,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
-__version__ = '1.5.5'
+__version__ = '1.6.0'
 
 from .core import Social
 from .datastore import SQLAlchemyConnectionDatastore, \
