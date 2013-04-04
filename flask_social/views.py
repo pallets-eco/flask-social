@@ -197,7 +197,8 @@ def login_callback(provider_id):
                      'account' % provider.name, 'error')
             return redirect(_security.login_manager.login_view)
 
-        query = dict(provider_user_id=module.get_provider_user_id(response))
+        query = dict(provider_user_id=module.get_provider_user_id(response),
+                     provider_id=provider_id)
 
         return response, query
 
