@@ -37,15 +37,16 @@ def get_authorize_callback(endpoint, provider_id):
     return request.url_root[:-1] + url
 
 
-def get_conection_values_from_oauth_response(provider, oauth_response):
+def get_connection_values_from_oauth_response(provider, oauth_response):
     if oauth_response is None:
         return None
 
     module = import_module(provider.module)
 
-    return module.get_connection_values(oauth_response,
-                consumer_key=provider.consumer_key,
-                consumer_secret=provider.consumer_secret)
+    return module.get_connection_values(
+        oauth_response,
+        consumer_key=provider.consumer_key,
+        consumer_secret=provider.consumer_secret)
 
 
 def get_config(app):

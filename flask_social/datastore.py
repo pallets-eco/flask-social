@@ -10,6 +10,7 @@
 """
 
 from flask_security.datastore import SQLAlchemyDatastore, MongoEngineDatastore
+from mongoengine.queryset import Q, QCombination
 
 
 class ConnectionDatastore(object):
@@ -32,8 +33,7 @@ class ConnectionDatastore(object):
         return self.put(self.connection_model(**kwargs))
 
     def delete_connection(self, **kwargs):
-        """Remove a single connection to a provider for the specified user
-        """
+        """Remove a single connection to a provider for the specified user."""
         conn = self.find_connection(**kwargs)
         if not conn:
             return False
@@ -41,8 +41,7 @@ class ConnectionDatastore(object):
         return True
 
     def delete_connections(self, **kwargs):
-        """Remove a single connection to a provider for the specified user
-        """
+        """Remove a single connection to a provider for the specified user."""
         rv = False
         for c in self.find_connections(**kwargs):
             self.delete(c)
@@ -75,7 +74,8 @@ class MongoEngineConnectionDatastore(MongoEngineDatastore, ConnectionDatastore):
         ConnectionDatastore.__init__(self, connection_model)
 
     def _query(self, **kwargs):
-        return self.connection_model.objects(**kwargs)
+        queries = map(lambda i: Q(**{i[0]: i[1]}), kwargs.items())
+        return self.connection_model.objects(QCombination(QCombination.AND, queries))
 
     def find_connection(self, **kwargs):
         return self._query(**kwargs).first()

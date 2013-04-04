@@ -21,7 +21,7 @@ from werkzeug.local import LocalProxy
 from .signals import connection_removed, connection_created, \
      connection_failed, login_completed, login_failed
 from .utils import config_value, get_provider_or_404, get_authorize_callback, \
-     get_conection_values_from_oauth_response
+     get_connection_values_from_oauth_response
 
 
 # Convenient references
@@ -108,7 +108,7 @@ def remove_connection(provider_id, provider_user_id):
         msg = ('Unabled to remove connection to %(provider)s' % ctx, 'error')
 
     do_flash(*msg)
-    return redirect(request.referrer)
+    return redirect(request.referrer or get_post_login_redirect())
 
 
 def connect_handler(cv, provider):
@@ -144,7 +144,7 @@ def connect_callback(provider_id):
     provider = get_provider_or_404(provider_id)
 
     def connect(response):
-        cv = get_conection_values_from_oauth_response(provider, response)
+        cv = get_connection_values_from_oauth_response(provider, response)
         if cv is None:
             do_flash('Access was denied by %s' % provider.name, 'error')
             return redirect(get_url(config_value('CONNECT_DENY_VIEW')))

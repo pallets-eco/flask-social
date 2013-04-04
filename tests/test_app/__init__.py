@@ -30,7 +30,7 @@ class HTTPMethodOverrideMiddleware(object):
 
 
 def create_users():
-    for u in  (('matt@lp.com', 'password'),):
+    for u in (('matt@lp.com', 'password'),):
         current_app.security.datastore.create_user(email=u[0], password=u[1])
         current_app.security.datastore.commit()
 

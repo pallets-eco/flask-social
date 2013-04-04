@@ -1,8 +1,30 @@
 import unittest
 
-from flask.ext.testing import Twill, twill
+import mock
+
 from tests.test_app.sqlalchemy import create_app as create_sql_app
 from tests.test_app.mongoengine import create_app as create_mongo_app
+
+
+def get_mock_twitter_response():
+    return {
+        'oauth_token_secret': 'the_oauth_token_secret',
+        'user_id': '1234',
+        'oauth_token': 'the_oauth_token',
+        'screen_name': 'twitter_username'
+    }
+
+
+def get_mock_twitter_connection_values():
+    return {
+        'provider_id': 'twitter',
+        'provider_user_id': '1234',
+        'access_token': 'the_oauth_token',
+        'secret': 'the_oauth_token_secret',
+        'display_name': '@twitter_username',
+        'profile_url': 'http://twitter.com/twitter_username',
+        'image_url': 'https://cdn.twitter.com/something.png'
+    }
 
 
 class SocialTest(unittest.TestCase):
@@ -17,6 +39,10 @@ class SocialTest(unittest.TestCase):
         self.app.config['TESTING'] = True
         self.client = self.app.test_client()
 
+    def tearDown(self):
+        super(SocialTest, self).tearDown()
+        self.client.get('/logout')
+
     def _create_app(self, auth_config):
         app_type = self.APP_TYPE or 'sql'
         if app_type == 'sql':
@@ -24,128 +50,79 @@ class SocialTest(unittest.TestCase):
         if app_type == 'mongo':
             return create_mongo_app(auth_config, False)
 
-    def _login(self, t):
-        t.browser.go(t.url('/login'))
-        twill.commands.fv('login_user_form', 'email', 'matt@lp.com')
-        twill.commands.fv('login_user_form', 'password', 'password')
-        twill.commands.submit(0)
-
-    def _login_provider(self, t, provider):
-        t.browser.go(t.url('/login'))
-        twill.commands.fv('%s_login_form' % provider, 'login_%s' % provider, '')
-        t.browser.submit(1)
-
-    def _start_connect(self, t, provider):
-        t.browser.go(t.url('/profile'))
-        twill.commands.fv('%s_connect_form' % provider,
-                          'connect_' + provider,
-                          '')
-        t.browser.submit('connect_' + provider)
-
-    def _remove_connection(self, t, provider):
-        t.browser.go(t.url('/profile'))
-        twill.commands.fv('%s_disconnect_form' % provider,
-                          'disconnect_' + provider,
-                          '')
-        t.browser.submit('disconnect_' + provider)
-
 
 class TwitterSocialTests(SocialTest):
 
-    def _fill_twitter_oauth(self, t, username, password):
-        try:
-            twill.commands.fv('oauth_form', 'session[username_or_email]', username)
-            twill.commands.fv('oauth_form', 'session[password]', password)
-        except:
-            pass
+    @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    def test_connect_twitter(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+        mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_authorize.return_value = 'Should be a redirect'
+        mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
-    def _authorize_twitter(self, t, username=None, password=None):
-        if not 'oauth_form' in t.browser.get_html():
-            return
-        username = username or self.app.config['TWITTER_USERNAME']
-        password = password or self.app.config['TWITTER_PASSWORD']
-        self._fill_twitter_oauth(t, username, password)
-        form = t.browser.get_form('oauth_form')
-        twill.commands.fv('oauth_form', 'cancel', '')
-        form.find_control('cancel').disabled = True
-        t.browser.submit(0)
+        self.client.post('/login', data=dict(email='matt@lp.com', password='password'))
+        self.client.post('/connect/twitter')
+        r = self.client.get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn('Connection established to Twitter', r.data)
 
-    def _deny_twitter(self, t, username, password):
-        self._fill_twitter_oauth(username, password)
-        t.browser.submit(0)
+    @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    def test_double_connect_twitter(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+        mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_authorize.return_value = 'Should be a redirect'
+        mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
-    def test_connect_twitter(self):
-        with Twill(self.app) as t:
-            self._login(t)
-            self._start_connect(t, 'twitter')
-            self._authorize_twitter(t)
-            self.assertIn('Connection established to Twitter', t.browser.get_html())
+        self.client.post('/login', data=dict(email='matt@lp.com', password='password'))
+        for x in range(2):
+            self.client.post('/connect/twitter')
+            r = self.client.get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn('A connection is already established with', r.data)
 
-    def test_double_connect_twitter(self):
-        with Twill(self.app) as t:
-            self._login(t)
-            self._start_connect(t, 'twitter')
-            self._authorize_twitter(t)
-            self._start_connect(t, 'twitter')
-            self._authorize_twitter(t)
-            self.assertIn('A connection is already established with', t.browser.get_html())
+    @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    def test_unconnected_twitter_login(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+        mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_authorize.return_value = 'Should be a redirect'
+        mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
-    def test_unconnected_twitter_login(self):
-        with Twill(self.app) as t:
-            self._login_provider(t, 'twitter')
-            self._authorize_twitter(t)
-            self.assertIn('Twitter account not associated with an existing user',
-                          t.browser.get_html())
+        self.client.post('/login/twitter')
+        r = self.client.get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn('Twitter account not associated with an existing user', r.data)
 
-    def test_connected_login_with_twitter(self):
-        with Twill(self.app) as t:
-            self._login(t)
-            self._start_connect(t, 'twitter')
-            self._authorize_twitter(t)
-            t.browser.go(t.url('/logout'))
-            self._login_provider(t, 'twitter')
-            self._authorize_twitter(t)
-            self.assertIn('Profile Page', t.browser.get_html())
+    @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    def test_connected_twitter_login(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+        mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_authorize.return_value = 'Should be a redirect'
+        mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
-    def test_remove_connection(self):
-        with Twill(self.app) as t:
-            self._login(t)
-            self._start_connect(t, 'twitter')
-            self._authorize_twitter(t)
-            self._remove_connection(t, 'twitter')
-            assert 'Connection to Twitter removed' in t.browser.get_html()
+        self.client.post('/login', data=dict(email='matt@lp.com', password='password'))
+        self.client.post('/connect/twitter')
+        r = self.client.get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn('Connection established to Twitter', r.data)
+        self.client.get('/logout')
+        self.client.post('/login/twitter')
+        r = self.client.get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn("Hello matt@lp.com", r.data)
+
+    @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    def test_remove_connection(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+        mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_authorize.return_value = 'Should be a redirect'
+        mock_handle_oauth1_response.return_value = get_mock_twitter_response()
+
+        self.client.post('/login', data=dict(email='matt@lp.com', password='password'))
+        self.client.post('/connect/twitter')
+        r = self.client.get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        r = self.client.delete('/connect/twitter/1234', follow_redirects=True)
+        self.assertIn('Connection to Twitter removed', r.data)
 
 
 class MongoEngineTwitterSocialTests(TwitterSocialTests):
     APP_TYPE = 'mongo'
-
-
-"""
-# Unfortunately Facebook can't be tested because
-# the Twill client is not a supported browser.
-# Leaving this in for reference
-class FacebookSocialTests(SocialTest):
-
-    def _login_facebook(self, t, email=None, password=None):
-        email = email or self.app.config['FACEBOOK_EMAIL']
-        password = password or self.app.config['FACEBOOK_PASSWORD']
-        twill.commands.fv('login_form', 'email', email)
-        twill.commands.fv('login_form', 'pass', password)
-        t.browser.submit(0)
-
-    def _authorize_facebook(self, t, username=None, password=None):
-        if 'login_form' in t.browser.get_html():
-            self._login_facebook(t)
-
-        if 'uiserver_form' in t.browser.get_html():
-            t.browser.get_form('uiserver_form')
-            #t.browser.submit('grant_clicked')
-            t.browser.submit(0)
-
-    def test_connect_facebook(self):
-        with Twill(self.app) as t:
-            self._login(t)
-            self._start_connect(t, 'facebook')
-            self._authorize_facebook(t)
-            assert 'Connection established to Facebook' in t.browser.get_html()
-"""
