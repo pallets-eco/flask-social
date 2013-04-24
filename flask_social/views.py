@@ -195,7 +195,7 @@ def login_callback(provider_id):
         if response is None:
             do_flash('Access was denied to your %s '
                      'account' % provider.name, 'error')
-            return redirect(_security.login_manager.login_view)
+            return redirect(_security.login_manager.login_view), None
 
         query = dict(provider_user_id=module.get_provider_user_id(response),
                      provider_id=provider_id)
@@ -203,6 +203,8 @@ def login_callback(provider_id):
         return response, query
 
     response, query = provider.authorized_handler(login)()
+    if query is None:
+        return response
     return login_handler(response, provider, query)
 
 
