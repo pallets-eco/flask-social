@@ -148,6 +148,8 @@ def connect_callback(provider_id):
         if cv is None:
             do_flash('Access was denied by %s' % provider.name, 'error')
             return redirect(get_url(config_value('CONNECT_DENY_VIEW')))
+        if 'email' in cv.keys():
+            del cv['email']
         return cv
 
     return connect_handler(provider.authorized_handler(connect)(), provider)
