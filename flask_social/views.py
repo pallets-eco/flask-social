@@ -11,7 +11,7 @@
 from importlib import import_module
 
 from flask import Blueprint, current_app, redirect, request, session, \
-     after_this_request, abort
+     after_this_request, abort, url_for
 from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect, login_user, \
      get_url, do_flash
@@ -195,7 +195,7 @@ def login_callback(provider_id):
         if response is None:
             do_flash('Access was denied to your %s '
                      'account' % provider.name, 'error')
-            return redirect(_security.login_manager.login_view), None
+            return _security.login_manager.unauthorized(), None
 
         query = dict(provider_user_id=module.get_provider_user_id(response),
                      provider_id=provider_id)
