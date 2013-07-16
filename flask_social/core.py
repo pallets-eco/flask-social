@@ -140,4 +140,6 @@ class Social(object):
         return state
 
     def __getattr__(self, name):
+        if self.app is None and self.datastore is None:
+            return None
         return getattr(self._state, name, None)
