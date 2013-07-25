@@ -3,6 +3,17 @@ Flask-Social Changelog
 
 Here you can see the full list of changes between each Flask-Social release.
 
+Version 1.6.1
+-------------
+
+Released July 25 2013
+
+- Changed google provider to use oauth2 service instead of plus service
+- Fixed MongoEngine datastore to support multiple versions
+- Fixed bug when a user denies access from OAuth provider
+- Fixed foursquare provider image_url bug
+
+
 Version 1.6.0
 -------------
 
