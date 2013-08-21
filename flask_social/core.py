@@ -120,7 +120,7 @@ class Social(object):
         providers = dict()
 
         for key, config in app.config.items():
-            if not key.startswith('SOCIAL_') or key in default_config:
+            if not key.startswith('SOCIAL_') or config is None or key in default_config:
                 continue
 
             suffix = key.lower().replace('social_', '')
