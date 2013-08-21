@@ -41,13 +41,13 @@ Then install your datastore requirement.
 
 **MongoEngine**::
 
-    $ pip install https://github.com/sbook/flask-mongoengine/tarball/master
+    $ pip install flask-mongoengine
 
 Then install your provider API libraries.
 
 **Facebook**::
 
-    $ pip install http://github.com/pythonforfacebook/facebook-sdk/tarball/master
+    $ pip install facebook-sdk
 
 **Twitter**::
 
