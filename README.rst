@@ -2,6 +2,7 @@ Flask-Social
 ============
 
 .. image:: https://secure.travis-ci.org/mattupstate/flask-social.png?branch=develop
+   :target: https://secure.travis-ci.org/mattupstate/flask-social
 
 Oauth provider login and APIs for use with
 `Flask-Security <http://packages.python.org/Flask-Security/>`_
