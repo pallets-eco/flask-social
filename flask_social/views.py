@@ -145,12 +145,14 @@ def connect_callback(provider_id):
 
     def connect(response):
         cv = get_connection_values_from_oauth_response(provider, response)
-        if cv is None:
-            do_flash('Access was denied by %s' % provider.name, 'error')
-            return redirect(get_url(config_value('CONNECT_DENY_VIEW')))
         return cv
 
-    return connect_handler(provider.authorized_handler(connect)(), provider)
+    cv = provider.authorized_handler(connect)()
+    if cv is None:
+        do_flash('Access was denied by %s' % provider.name, 'error')
+        return redirect(get_url(config_value('CONNECT_DENY_VIEW')))
+
+    return connect_handler(cv, provider)
 
 
 @anonymous_user_required
