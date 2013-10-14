@@ -53,6 +53,7 @@ def get_connection_values(response=None, **kwargs):
         access_token=response['oauth_token'],
         secret=response['oauth_token_secret'],
         display_name='@%s' % user.screen_name,
+        full_name = user.name,
         profile_url="http://twitter.com/%s" % user.screen_name,
         image_url=user.profile_image_url
     )
