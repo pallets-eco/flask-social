@@ -3,6 +3,15 @@ Flask-Social Changelog
 
 Here you can see the full list of changes between each Flask-Social release.
 
+Version 1.6.2
+-------------
+
+Released November 13 2013
+
+- Changed provider.get_connection_values() to also return Full Name (if avaliable)
+- Fixed bug in the connect_callback() fuction to redirect upon OAuth failure
+
+
 Version 1.6.1
 -------------
 

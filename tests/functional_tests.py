@@ -12,7 +12,8 @@ def get_mock_twitter_response():
         'oauth_token_secret': 'the_oauth_token_secret',
         'user_id': '1234',
         'oauth_token': 'the_oauth_token',
-        'screen_name': 'twitter_username'
+        'screen_name': 'twitter_username',
+        'name': 'twitter_name'
     }
 
 
@@ -23,6 +24,7 @@ def get_mock_twitter_connection_values():
         'access_token': 'the_oauth_token',
         'secret': 'the_oauth_token_secret',
         'display_name': '@twitter_username',
+        'full_name': 'twitter_name',
         'profile_url': 'http://twitter.com/twitter_username',
         'image_url': 'https://cdn.twitter.com/something.png'
     }
