@@ -16,7 +16,7 @@ from tests.test_app import create_app as create_base_app, populate_data
 
 def create_app(config=None, debug=True):
     app = create_base_app(config, debug)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/flask_social_test'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
 
     db = SQLAlchemy(app)
 
