@@ -170,7 +170,9 @@ def login_handler(response, provider, query):
 
     if connection:
         after_this_request(_commit)
-        user = connection.user
+        #user = connection.user
+        # Above code fails as the Mongoengine model definition of the 'Connection' class has 'user_id' as the ReferenceField to the 'User' class
+        user = connection.user_id
         login_user(user)
         key = _social.post_oauth_login_session_key
         redirect_url = session.pop(key, get_post_login_redirect())
