@@ -118,7 +118,14 @@ def connect_handler(cv, provider):
     :param provider_id: The provider ID the connection shoudl be made to
     """
     cv.setdefault('user_id', current_user.get_id())
-    connection = _datastore.find_connection(**cv)
+    #connection = _datastore.find_connection(**cv)
+    # As there are fields in the cv (like full_name) that are not in the connection document of the Mongo database,
+    # sending all the values in cv to create a query against the database fails
+    ctx = dict(
+        provider_id=cv["provider_id"],
+        provider_user_id=cv["provider_user_id"]
+    )
+    connection = _datastore.find_connection(**ctx)
 
     if connection is None:
         after_this_request(_commit)
