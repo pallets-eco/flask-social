@@ -11,17 +11,17 @@
 from importlib import import_module
 
 from flask import Blueprint, current_app, redirect, request, session, \
-     after_this_request, abort, url_for
+    after_this_request, abort, url_for
 from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect, login_user, \
-     get_url, do_flash
+    get_url, do_flash
 from flask.ext.security.decorators import anonymous_user_required
 from werkzeug.local import LocalProxy
 
 from .signals import connection_removed, connection_created, \
-     connection_failed, login_completed, login_failed
+    connection_failed, login_completed, login_failed
 from .utils import config_value, get_provider_or_404, get_authorize_callback, \
-     get_connection_values_from_oauth_response
+    get_connection_values_from_oauth_response
 
 
 # Convenient references
@@ -118,7 +118,8 @@ def connect_handler(cv, provider):
     :param provider_id: The provider ID the connection shoudl be made to
     """
     cv.setdefault('user_id', current_user.get_id())
-    connection = _datastore.find_connection(**cv)
+    connection = _datastore.find_connection(
+        provider_id=cv['provider_id'], provider_user_id=cv['provider_user_id'])
 
     if connection is None:
         after_this_request(_commit)
