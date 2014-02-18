@@ -11,17 +11,17 @@
 from importlib import import_module
 
 from flask import Blueprint, current_app, redirect, request, session, \
-     after_this_request, abort, url_for
+    after_this_request, abort, url_for
 from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect, login_user, \
-     get_url, do_flash
+    get_url, do_flash
 from flask.ext.security.decorators import anonymous_user_required
 from werkzeug.local import LocalProxy
 
 from .signals import connection_removed, connection_created, \
-     connection_failed, login_completed, login_failed
+    connection_failed, login_completed, login_failed
 from .utils import config_value, get_provider_or_404, get_authorize_callback, \
-     get_connection_values_from_oauth_response
+    get_connection_values_from_oauth_response
 
 
 # Convenient references
@@ -225,10 +225,10 @@ def create_blueprint(state, import_name):
     bp.route('/connect/<provider_id>',
              methods=['POST'])(connect)
 
-    bp.route('/connect/<provider_id>',
-             methods=['DELETE'])(remove_all_connections)
+    bp.route('/disconnect/<provider_id>',
+             methods=['POST'])(remove_all_connections)
 
-    bp.route('/connect/<provider_id>/<provider_user_id>',
-             methods=['DELETE'])(remove_connection)
+    bp.route('/disconnect/<provider_id>/<provider_user_id>',
+             methods=['POST'])(remove_connection)
 
     return bp
