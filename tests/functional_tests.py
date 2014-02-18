@@ -26,6 +26,18 @@ def get_mock_twitter_connection_values():
         'image_url': 'https://cdn.twitter.com/something.png'
     }
 
+def get_mock_twitter_updated_connection_values():
+    return {
+        'provider_id': 'twitter',
+        'provider_user_id': '12345',
+        'access_token': 'the_oauth_token',
+        'secret': 'the_oauth_token_secret',
+        'display_name': '@twitter_username',
+        'full_name': 'twitter_name_updated',
+        'profile_url': 'http://twitter.com/twitter_username',
+        'image_url': 'https://updated_cdn.twitter.com/something.png'
+    }
+
 
 class SocialTest(unittest.TestCase):
 
@@ -149,6 +161,28 @@ class TwitterSocialTests(SocialTest):
         self._post('/login/twitter')
         r = self._get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
         self.assertIn("Hello matt@lp.com", r.data)
+
+    @mock.patch('flask_social.providers.twitter.get_api')
+    @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    def test_connected_twitter_updaated_login(self, mock_authorize, mock_handle_oauth1_response,mock_get_twitter_api, mock_get_connection_values):
+        mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_authorize.return_value = 'Should be a redirect'
+        mock_handle_oauth1_response.return_value = get_mock_twitter_response()
+        mock_get_twitter_api.return_value = get_mock_twitter_connection_values()
+
+        self.authenticate()
+        self._post('/connect/twitter')
+        r = self._get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn('Connection established to Twitter', r.data)
+
+        mock_get_connection_values.return_value = get_mock_twitter_updated_connection_values()
+
+        self._post('/connect/twitter')
+        r = self._get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn('A connection is already established with Twitter to your account', r.data)
+
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
