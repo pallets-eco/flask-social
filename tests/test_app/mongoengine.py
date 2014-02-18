@@ -63,6 +63,7 @@ def create_app(auth_config=None, debug=True):
             m.drop_collection()
         populate_data()
 
+    app.get_user = lambda: User.objects().first()
     return app
 
 if __name__ == '__main__':

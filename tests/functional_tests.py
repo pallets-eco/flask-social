@@ -26,6 +26,17 @@ def get_mock_twitter_connection_values():
         'image_url': 'https://cdn.twitter.com/something.png'
     }
 
+def get_mock_twitter_token_pair():
+    return {
+        'access_token': 'the_oauth_token',
+        'secret': 'the_oauth_token_secret'
+        }
+
+def get_mock_twitter_updated_token_pair():
+    return {
+        'access_token': 'the_updated_oauth_token',
+        'secret': 'the_updated_oauth_token_secret'
+        }
 
 class SocialTest(unittest.TestCase):
 
@@ -92,7 +103,10 @@ class TwitterSocialTests(SocialTest):
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
     @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
-    def test_connect_twitter(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+    def test_connect_twitter(self,
+                             mock_authorize,
+                             mock_handle_oauth1_response,
+                             mock_get_connection_values):
         mock_get_connection_values.return_value = get_mock_twitter_connection_values()
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
@@ -107,7 +121,10 @@ class TwitterSocialTests(SocialTest):
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
     @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
-    def test_double_connect_twitter(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+    def test_double_connect_twitter(self,
+                                    mock_authorize,
+                                    mock_handle_oauth1_response,
+                                    mock_get_connection_values):
         mock_get_connection_values.return_value = get_mock_twitter_connection_values()
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
@@ -120,10 +137,16 @@ class TwitterSocialTests(SocialTest):
         self.assertIn('A connection is already established with', r.data)
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_social.providers.twitter.get_token_pair_from_response')
     @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
     @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
-    def test_unconnected_twitter_login(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+    def test_unconnected_twitter_login(self,
+                                       mock_authorize,
+                                       mock_handle_oauth1_response,
+                                       mock_get_token_pair_from_response,
+                                       mock_get_connection_values):
         mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_get_token_pair_from_response.return_value = get_mock_twitter_token_pair()
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
@@ -133,10 +156,17 @@ class TwitterSocialTests(SocialTest):
 
     @mock.patch('flask_social.providers.twitter.get_api')
     @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_social.providers.twitter.get_token_pair_from_response')
     @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
     @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
-    def test_connected_twitter_login(self, mock_authorize, mock_handle_oauth1_response,mock_get_twitter_api, mock_get_connection_values):
+    def test_connected_twitter_login(self,
+                                     mock_authorize,
+                                     mock_handle_oauth1_response,
+                                     mock_get_token_pair_from_response,
+                                     mock_get_connection_values,
+                                     mock_get_twitter_api):
         mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_get_token_pair_from_response.return_value = get_mock_twitter_token_pair()
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
         mock_get_twitter_api.return_value = get_mock_twitter_connection_values()
@@ -150,10 +180,45 @@ class TwitterSocialTests(SocialTest):
         r = self._get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
         self.assertIn("Hello matt@lp.com", r.data)
 
+    @mock.patch('flask_social.providers.twitter.get_api')
+    @mock.patch('flask_social.providers.twitter.get_connection_values')
+    @mock.patch('flask_social.providers.twitter.get_token_pair_from_response')
+    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    def test_connected_twitter_login_update_token(self,
+                                                  mock_authorize,
+                                                  mock_handle_oauth1_response,
+                                                  mock_get_token_pair_from_response,
+                                                  mock_get_connection_values,
+                                                  mock_get_twitter_api):
+        mock_get_connection_values.return_value = get_mock_twitter_connection_values()
+        mock_get_token_pair_from_response.return_value = get_mock_twitter_updated_token_pair()
+        mock_authorize.return_value = 'Should be a redirect'
+        mock_handle_oauth1_response.return_value = get_mock_twitter_response()
+        mock_get_twitter_api.return_value = get_mock_twitter_connection_values()
+
+        self.authenticate()
+        self._post('/connect/twitter')
+        r = self._get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn('Connection established to Twitter', r.data)
+        self._get('/logout')
+        self._post('/login/twitter')
+        r = self._get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.assertIn("Hello matt@lp.com", r.data)
+        user = self.app.get_user()
+        connection = [c for c in user.connections if c.provider_id == 'twitter'][0]
+        self.assertEqual(connection.access_token,
+                         get_mock_twitter_updated_token_pair()['access_token'])
+        self.assertEqual(connection.secret,
+                         get_mock_twitter_updated_token_pair()['secret'])
+
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
     @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
-    def test_remove_connection(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+    def test_remove_connection(self,
+                               mock_authorize,
+                               mock_handle_oauth1_response,
+                               mock_get_connection_values):
         mock_get_connection_values.return_value = get_mock_twitter_connection_values()
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()

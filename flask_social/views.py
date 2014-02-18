@@ -21,7 +21,7 @@ from werkzeug.local import LocalProxy
 from .signals import connection_removed, connection_created, \
      connection_failed, login_completed, login_failed
 from .utils import config_value, get_provider_or_404, get_authorize_callback, \
-     get_connection_values_from_oauth_response
+     get_connection_values_from_oauth_response, get_token_pair_from_oauth_response
 
 
 # Convenient references
@@ -163,6 +163,11 @@ def login_handler(response, provider, query):
 
     if connection:
         after_this_request(_commit)
+        token_pair = get_token_pair_from_oauth_response(provider, response)
+        if (token_pair['access_token'] != connection.access_token or
+            token_pair['secret'] != connection.secret):
+            connection.access_token = token_pair['access_token']
+            connection.secret = token_pair['secret']
         user = connection.user
         login_user(user)
         key = _social.post_oauth_login_session_key

@@ -61,6 +61,8 @@ def create_app(config=None, debug=True):
         db.create_all()
         populate_data()
 
+
+    app.get_user = lambda: User.query.first()
     return app
 
 if __name__ == '__main__':

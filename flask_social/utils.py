@@ -48,6 +48,9 @@ def get_connection_values_from_oauth_response(provider, oauth_response):
         consumer_key=provider.consumer_key,
         consumer_secret=provider.consumer_secret)
 
+def get_token_pair_from_oauth_response(provider, oauth_response):
+    module = import_module(provider.module)
+    return module.get_token_pair_from_response(oauth_response)
 
 def get_config(app):
     """Conveniently get the social configuration for the specified

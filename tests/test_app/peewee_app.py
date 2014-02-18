@@ -69,6 +69,8 @@ def create_app(config=None, debug=True):
             Model.create_table(fail_silently=True)
         populate_data()
 
+    app.get_user = lambda: User.select().get()
+
     return app
 
 if __name__ == '__main__':
