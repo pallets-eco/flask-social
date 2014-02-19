@@ -176,6 +176,7 @@ def login_handler(response, provider, query):
             token_pair['secret'] != connection.secret):
             connection.access_token = token_pair['access_token']
             connection.secret = token_pair['secret']
+            _datastore.put(connection)
         user = connection.user
         login_user(user)
         key = _social.post_oauth_login_session_key
