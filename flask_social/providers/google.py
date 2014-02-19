@@ -83,3 +83,9 @@ def get_connection_values(response, **kwargs):
         profile_url=profile.get('link'),
         image_url=profile.get('picture')
     )
+
+def get_token_pair_from_response(response):
+    return dict(
+        access_token = response.get('access_token', None),
+        secret = None
+    )

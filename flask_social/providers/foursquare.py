@@ -64,3 +64,9 @@ def get_connection_values(response, **kwargs):
         profile_url=profile_url,
         image_url=image_url
     )
+
+def get_token_pair_from_response(response):
+    return dict(
+        access_token = response.get('access_token', None),
+        secret = None
+    )
