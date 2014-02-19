@@ -14,7 +14,7 @@ from flask import Blueprint, current_app, redirect, request, session, \
      after_this_request, abort, url_for
 from flask.ext.security import current_user, login_required
 from flask.ext.security.utils import get_post_login_redirect, login_user, \
-     get_url, do_flash
+     logout_user, get_url, do_flash
 from flask.ext.security.decorators import anonymous_user_required
 from werkzeug.local import LocalProxy
 
@@ -59,6 +59,14 @@ def connect(provider_id):
     session[config_value('POST_OAUTH_CONNECT_SESSION_KEY')] = pc
     return provider.authorize(callback_url)
 
+
+@login_required
+def reconnect(provider_id):
+    """Tokens automatically refresh with login.
+    Logs user out and starts provider login OAuth flow
+    """
+    logout_user()
+    return login(provider_id)
 
 @login_required
 def remove_all_connections(provider_id):
@@ -235,5 +243,8 @@ def create_blueprint(state, import_name):
 
     bp.route('/connect/<provider_id>/<provider_user_id>',
              methods=['DELETE'])(remove_connection)
+
+    bp.route('/reconnect/<provider_id>',
+             methods=['POST'])(reconnect)
 
     return bp
