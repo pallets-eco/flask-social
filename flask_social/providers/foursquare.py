@@ -22,12 +22,6 @@ config = {
     'request_token_url': None,
     'access_token_url': 'https://foursquare.com/oauth2/access_token',
     'authorize_url': 'https://foursquare.com/oauth2/authenticate',
-    'access_token_params': {
-        'grant_type': 'authorization_code'
-    },
-    'request_token_params': {
-        'response_type': 'code'
-    }
 }
 
 
