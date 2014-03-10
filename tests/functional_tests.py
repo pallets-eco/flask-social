@@ -101,8 +101,8 @@ class SocialTest(unittest.TestCase):
 class TwitterSocialTests(SocialTest):
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
-    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.authorize')
     def test_connect_twitter(self,
                              mock_authorize,
                              mock_handle_oauth1_response,
@@ -119,8 +119,8 @@ class TwitterSocialTests(SocialTest):
         self.assertIn('Connection established to Twitter', r.data)
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
-    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.authorize')
     def test_double_connect_twitter(self,
                                     mock_authorize,
                                     mock_handle_oauth1_response,
@@ -138,8 +138,8 @@ class TwitterSocialTests(SocialTest):
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_social.providers.twitter.get_token_pair_from_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.authorize')
     def test_unconnected_twitter_login(self,
                                        mock_authorize,
                                        mock_handle_oauth1_response,
@@ -157,8 +157,8 @@ class TwitterSocialTests(SocialTest):
     @mock.patch('flask_social.providers.twitter.get_api')
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_social.providers.twitter.get_token_pair_from_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.authorize')
     def test_connected_twitter_login(self,
                                      mock_authorize,
                                      mock_handle_oauth1_response,
@@ -183,8 +183,8 @@ class TwitterSocialTests(SocialTest):
     @mock.patch('flask_social.providers.twitter.get_api')
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_social.providers.twitter.get_token_pair_from_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.authorize')
     def test_connected_twitter_login_update_token(self,
                                                   mock_authorize,
                                                   mock_handle_oauth1_response,
@@ -222,8 +222,8 @@ class TwitterSocialTests(SocialTest):
     @mock.patch('flask_social.providers.twitter.get_api')
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_social.providers.twitter.get_token_pair_from_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.authorize')
     def test_reconnect_twitter_token(self,
                                      mock_authorize,
                                      mock_handle_oauth1_response,
@@ -258,8 +258,8 @@ class TwitterSocialTests(SocialTest):
                          get_mock_twitter_updated_token_pair()['secret'])
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
-    @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
-    @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.handle_oauth1_response')
+    @mock.patch('flask_oauthlib.client.OAuthRemoteApp.authorize')
     def test_remove_connection(self,
                                mock_authorize,
                                mock_handle_oauth1_response,
