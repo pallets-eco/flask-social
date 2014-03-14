@@ -52,7 +52,7 @@ def get_connection_values(response, **kwargs):
     api = foursquare.Foursquare(access_token=access_token)
     user = api.users()['user']
     profile_url = 'http://www.foursquare.com/user/' + user['id']
-    image_url = '%s%s' % (user['photo']['prefix'], user['photo']['suffix'][1:])
+    image_url = '%s256x256%s' % (user['photo']['prefix'], user['photo']['suffix'])
 
     return dict(
         provider_id=config['id'],
