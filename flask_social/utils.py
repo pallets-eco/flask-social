@@ -32,9 +32,10 @@ def get_authorize_callback(endpoint, provider_id):
 
     param: endpoint: Absolute path to append to the application's host
     """
+    url_root = current_app.config['SOCIAL_APP_URL'] or request.url_root[:-1]
     endpoint_prefix = config_value('BLUEPRINT_NAME')
     url = url_for(endpoint_prefix + '.' + endpoint, provider_id=provider_id)
-    return request.url_root[:-1] + url
+    return url_root + url
 
 
 def get_connection_values_from_oauth_response(provider, oauth_response):
