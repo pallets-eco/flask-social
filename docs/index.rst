@@ -148,6 +148,15 @@ index::
     Security(app, SQLAlchemyUserDatastore(db, User, Role))
     Social(app, SQLAlchemyConnectionDatastore(db, Connection))
 
+If you do not want the same OAuth account to be connected to more than one user account, 
+add the following to the Connection database model:
+
+    __table_args__ = (db.UniqueConstraint('provider_id', 'provider_user_id', name='_providerid_userid_uc'), {})
+
+This will ensure that every row in the Connection table has a unique provider_id and 
+provider_user_id pair. This means that any given Twitter account can only be connected 
+once.
+
 
 Connecting to Providers
 -----------------------
