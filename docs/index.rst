@@ -135,7 +135,7 @@ index::
 
     class Connection(db.Model):
         id = db.Column(db.Integer, primary_key=True)
-        user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+        user = db.relationship('user')
         provider_id = db.Column(db.String(255))
         provider_user_id = db.Column(db.String(255))
         access_token = db.Column(db.String(255))
