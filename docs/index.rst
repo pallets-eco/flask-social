@@ -19,7 +19,7 @@ Flask-Social sets up endpoints for your app to make it easy for you to let your
 users connect and/or login using Facebook and Twitter. Flask-Social persists
 the connection information and allows you to get a configured instance of an
 API object with your user's token so you can make API calls on behalf of them.
-Currently Facebook, Twitter, foursquare and Google are supported out of
+Currently Facebook, Twitter, foursquare, Google and Vkontakte are supported out of
 the box as long as you install the appropriate API library.
 
 
@@ -62,6 +62,9 @@ Then install your provider API libraries.
 
     $ pip install oauth2client google-api-python-client
 
+**VK (VKontakte)**::
+
+    $ pip install vkontakte
 
 .. _getting-started:
 
@@ -75,6 +78,7 @@ provider:
 * `Facebook <https://developers.facebook.com/>`_
 * `Twitter <https://dev.twitter.com/>`_
 * `foursquare <https://developer.foursquare.com/>`_
+* `VK <https://vk.com/dev>`_
 
 Bear in mind that Flask-Social requires Flask-Security. It would be a good idea
 to review the documentation for Flask-Security before moving on here as it
@@ -115,6 +119,13 @@ to configure your application with your provider's application values
         'consumer_key': 'xxxx',
         'consumer_secret': 'xxxx'
     }
+
+**VK**::
+    app.config['SOCIAL_VK'] = {
+        'consumer_key': 'xxxx',
+        'consumer_secret': 'xxxx'
+    }
+
 
 Next you'll want to setup the `Social` extension and give it an instance of
 your datastore. In the following code the post login page is set to a
@@ -163,7 +174,8 @@ add a mechanism on the profile page to do so. First the view method::
             content='Profile Page',
             twitter_conn=social.twitter.get_connection(),
             facebook_conn=social.facebook.get_connection(),
-            foursquare_conn=social.foursquare.get_connection())
+            foursquare_conn=social.foursquare.get_connection(),
+            vk_conn=social.vk.get_conntection())
 
 You should notice the mechanism for retreiving the current user's connection
 with each service provider. If a connection is not found, the value will be
@@ -186,6 +198,8 @@ with each service provider. If a connection is not found, the value will be
     {{ show_provider_button('facebook', 'Facebook', facebook_conn) }}
 
     {{ show_provider_button('foursquare', 'foursquare', foursquare_conn) }}
+
+    {{ show_provider_button('vk', 'vk', vk_conn) }}
 
 In the above template code a form is displayed depending on if a connection for
 the current user exists or not. If the connection exists a disconnect button is
@@ -219,6 +233,8 @@ for them to login via the provider. A login form would look like the following::
     {{ social_login('facebook', 'Facebook' )}}
 
     {{ social_login('foursquare', 'foursquare' )}}
+
+    {{ social_login('vk', 'vk' )}}
 
 In the above template code you'll notice the regular username and password login
 form and forms for the user to login via Twitter, Facebook, and foursquare. If
