@@ -12,11 +12,7 @@ config = {
     'request_token_url': None,
     'access_token_url': 'https://www.linkedin.com/uas/oauth2/accessToken',
     'authorize_url': 'https://www.linkedin.com/uas/oauth2/authorization',
-    'access_token_params': {
-        'grant_type': 'authorization_code'
-    },
     'request_token_params': {
-        'response_type': 'code',
         'scope': 'r_basicprofile r_emailaddress',
         'state': 'HSSRJKL02318akybgj857'
     }
@@ -27,11 +23,14 @@ selectors = ('id', 'first-name', 'last-name', 'email-address',
 
 
 def get_api(connection, **kwargs):
-    auth = linkedin.LinkedInAuthentication(kwargs.get('consumer_key'),
-                                                     kwargs.get('consumer_secret'),
-                                                     None,
-                                                     linkedin.PERMISSIONS.enums.values())
-    auth.token = AccessToken(getattr(connection, 'access_token'), getattr(connection, 'expires_in'))
+    auth = linkedin.LinkedInAuthentication(
+        kwargs.get('consumer_key'),
+        kwargs.get('consumer_secret'),
+        None,
+        linkedin.PERMISSIONS.enums.values()
+    )
+    auth.token = AccessToken(getattr(connection, 'access_token'),
+                             getattr(connection, 'expires_in'))
     api = linkedin.LinkedInApplication(auth)
     return api
 
@@ -61,7 +60,6 @@ def get_connection_values(response, **kwargs):
     profile_url = profile['siteStandardProfileRequest']['url']
     image_url = profile['pictureUrl']
 
-
     return dict(
         provider_id=config['id'],
         provider_user_id=profile['id'],
@@ -72,4 +70,11 @@ def get_connection_values(response, **kwargs):
         profile_url=profile_url,
         image_url=image_url,
         email=profile.get('emailAddress'),
+    )
+
+
+def get_token_pair_from_reponse(response):
+    return dict(
+        access_token=response.get('access_token', None),
+        secret=None
     )
