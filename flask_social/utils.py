@@ -34,7 +34,9 @@ def get_authorize_callback(endpoint, provider_id):
     """
     endpoint_prefix = config_value('BLUEPRINT_NAME')
     url = url_for(endpoint_prefix + '.' + endpoint, provider_id=provider_id)
-    return request.url_root[:-1] + url
+    #return request.url_root[:-1] + url
+    #when the application is running at http://domain.com/myapp above code redirects to http://domain.com/myapp/myapp...
+    return request.host_url[:-1] + url
 
 
 def get_connection_values_from_oauth_response(provider, oauth_response):
