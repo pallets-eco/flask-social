@@ -30,9 +30,16 @@ config = {
     },
     'request_token_params': {
         'response_type': 'code',
-        'scope': 'https://www.googleapis.com/auth/plus.me'
+        'scope': 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/plus.me'
+        #add ' https://www.googleapis.com/auth/userinfo.email' to scope to also get email
     }
 }
+
+def _get_api(credentials):
+    http = httplib2.Http()
+    http = credentials.authorize(http)
+    api = googleapi.build('oauth2', 'v2', http=http)
+    return api
 
 
 def get_api(connection, **kwargs):
@@ -40,10 +47,7 @@ def get_api(connection, **kwargs):
         access_token=getattr(connection, 'access_token'),
         user_agent=''
     )
-
-    http = httplib2.Http()
-    http = credentials.authorize(http)
-    return googleapi.build('plus', 'v1', http=http)
+    return _get_api(credentials)
 
 
 def get_provider_user_id(response, **kwargs):
@@ -52,11 +56,7 @@ def get_provider_user_id(response, **kwargs):
             access_token=response['access_token'],
             user_agent=''
         )
-
-        http = httplib2.Http()
-        http = credentials.authorize(http)
-        api = googleapi.build('plus', 'v1', http=http)
-        profile = api.people().get(userId='me').execute()
+        profile = _get_api(credentials).userinfo().get().execute()
         return profile['id']
     return None
 
@@ -72,17 +72,14 @@ def get_connection_values(response, **kwargs):
         user_agent=''
     )
 
-    http = httplib2.Http()
-    http = credentials.authorize(http)
-    api = googleapi.build('plus', 'v1', http=http)
-    profile = api.people().get(userId='me').execute()
-
+    profile = _get_api(credentials).userinfo().get().execute()
     return dict(
         provider_id=config['id'],
         provider_user_id=profile['id'],
         access_token=access_token,
         secret=None,
-        display_name=profile['displayName'],
-        profile_url=profile['url'],
-        image_url=profile['image']['url']
+        display_name=profile['name'],
+        full_name=profile['name'],
+        profile_url=profile.get('link'),
+        image_url=profile.get('picture')
     )

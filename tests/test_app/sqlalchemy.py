@@ -16,7 +16,7 @@ from tests.test_app import create_app as create_base_app, populate_data
 
 def create_app(config=None, debug=True):
     app = create_base_app(config, debug)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@localhost/flask_social_test'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
 
     db = SQLAlchemy(app)
 
@@ -47,6 +47,7 @@ def create_app(config=None, debug=True):
         access_token = db.Column(db.String(255))
         secret = db.Column(db.String(255))
         display_name = db.Column(db.String(255))
+        full_name = db.Column(db.String(255))
         profile_url = db.Column(db.String(512))
         image_url = db.Column(db.String(512))
         rank = db.Column(db.Integer)

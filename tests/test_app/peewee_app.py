@@ -54,6 +54,7 @@ def create_app(config=None, debug=True):
         access_token = TextField()
         secret = TextField(null=True)
         display_name = TextField()
+        full_name = TextField()
         profile_url = TextField()
         image_url = TextField()
         rank = IntegerField(null=True)

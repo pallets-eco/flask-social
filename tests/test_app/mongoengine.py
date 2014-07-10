@@ -45,6 +45,7 @@ def create_app(auth_config=None, debug=True):
         access_token = db.StringField(max_length=255)
         secret = db.StringField(max_length=255)
         display_name = db.StringField(max_length=255)
+        full_name = db.StringField(max_length=255)
         profile_url = db.StringField(max_length=512)
         image_url = db.StringField(max_length=512)
         rank = db.IntField(default=1)

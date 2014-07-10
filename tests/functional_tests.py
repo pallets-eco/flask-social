@@ -1,18 +1,16 @@
 import unittest
-
 import mock
-
 from tests.test_app.sqlalchemy import create_app as create_sql_app
 from tests.test_app.mongoengine import create_app as create_mongo_app
 from tests.test_app.peewee_app import create_app as create_peewee_app
-
 
 def get_mock_twitter_response():
     return {
         'oauth_token_secret': 'the_oauth_token_secret',
         'user_id': '1234',
         'oauth_token': 'the_oauth_token',
-        'screen_name': 'twitter_username'
+        'screen_name': 'twitter_username',
+        'name': 'twitter_name'
     }
 
 
@@ -23,6 +21,7 @@ def get_mock_twitter_connection_values():
         'access_token': 'the_oauth_token',
         'secret': 'the_oauth_token_secret',
         'display_name': '@twitter_username',
+        'full_name': 'twitter_name',
         'profile_url': 'http://twitter.com/twitter_username',
         'image_url': 'https://cdn.twitter.com/something.png'
     }
@@ -35,6 +34,7 @@ class SocialTest(unittest.TestCase):
 
     def setUp(self):
         super(SocialTest, self).setUp()
+
         self.app = self._create_app(self.SOCIAL_CONFIG or None)
         self.app.debug = False
         self.app.config['TESTING'] = True
@@ -52,6 +52,21 @@ class SocialTest(unittest.TestCase):
             return create_mongo_app(auth_config, False)
         if app_type == 'peewee':
             return create_peewee_app(auth_config, False)
+
+    def _post(self, route, data=None, content_type=None, follow_redirects=True, headers=None):
+        content_type = content_type or 'application/x-www-form-urlencoded'
+        return self.client.post(route, data=data,
+                                follow_redirects=follow_redirects,
+                                content_type=content_type, headers=headers)
+
+    def _get(self, route, content_type=None, follow_redirects=None, headers=None):
+        return self.client.get(route, follow_redirects=follow_redirects,
+                               content_type=content_type or 'text/html',
+                               headers=headers)
+
+    def authenticate(self, email="matt@lp.com", password="password", endpoint=None, **kwargs):
+        data = dict(email=email, password=password, remember='y')
+        return self._post(endpoint or '/login', data=data, **kwargs)
 
     def assertIn(self, member, container, msg=None):
         if hasattr(unittest.TestCase, 'assertIn'):
@@ -82,9 +97,11 @@ class TwitterSocialTests(SocialTest):
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
-        self.client.post('/login', data=dict(email='matt@lp.com', password='password'))
-        self.client.post('/connect/twitter')
-        r = self.client.get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        r = self.authenticate()
+
+        self.assertIn('Hello', r.data)
+        self._post('/connect/twitter')
+        r = self._get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
         self.assertIn('Connection established to Twitter', r.data)
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
@@ -95,10 +112,11 @@ class TwitterSocialTests(SocialTest):
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
-        self.client.post('/login', data=dict(email='matt@lp.com', password='password'))
+        r = self.authenticate()
+
         for x in range(2):
-            self.client.post('/connect/twitter')
-            r = self.client.get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+            self._post('/connect/twitter')
+            r = self._get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
         self.assertIn('A connection is already established with', r.data)
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
@@ -109,25 +127,27 @@ class TwitterSocialTests(SocialTest):
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
-        self.client.post('/login/twitter')
-        r = self.client.get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self._post('/login/twitter')
+        r = self._get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
         self.assertIn('Twitter account not associated with an existing user', r.data)
 
+    @mock.patch('flask_social.providers.twitter.get_api')
     @mock.patch('flask_social.providers.twitter.get_connection_values')
     @mock.patch('flask_oauth.OAuthRemoteApp.handle_oauth1_response')
     @mock.patch('flask_oauth.OAuthRemoteApp.authorize')
-    def test_connected_twitter_login(self, mock_authorize, mock_handle_oauth1_response, mock_get_connection_values):
+    def test_connected_twitter_login(self, mock_authorize, mock_handle_oauth1_response,mock_get_twitter_api, mock_get_connection_values):
         mock_get_connection_values.return_value = get_mock_twitter_connection_values()
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
+        mock_get_twitter_api.return_value = get_mock_twitter_connection_values()
 
-        self.client.post('/login', data=dict(email='matt@lp.com', password='password'))
-        self.client.post('/connect/twitter')
-        r = self.client.get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self.authenticate()
+        self._post('/connect/twitter')
+        r = self._get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
         self.assertIn('Connection established to Twitter', r.data)
-        self.client.get('/logout')
-        self.client.post('/login/twitter')
-        r = self.client.get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self._get('/logout')
+        self._post('/login/twitter')
+        r = self._get('/login/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
         self.assertIn("Hello matt@lp.com", r.data)
 
     @mock.patch('flask_social.providers.twitter.get_connection_values')
@@ -138,16 +158,15 @@ class TwitterSocialTests(SocialTest):
         mock_authorize.return_value = 'Should be a redirect'
         mock_handle_oauth1_response.return_value = get_mock_twitter_response()
 
-        self.client.post('/login', data=dict(email='matt@lp.com', password='password'))
-        self.client.post('/connect/twitter')
-        r = self.client.get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
+        self._post('/login', data=dict(email='matt@lp.com', password='password'))
+        self._post('/connect/twitter')
+        r = self._get('/connect/twitter?oauth_token=oauth_token&oauth_verifier=oauth_verifier', follow_redirects=True)
         r = self.client.delete('/connect/twitter/1234', follow_redirects=True)
         self.assertIn('Connection to Twitter removed', r.data)
 
 
 class MongoEngineTwitterSocialTests(TwitterSocialTests):
     APP_TYPE = 'mongo'
-
 
 class PeeweeTwitterSocialTests(TwitterSocialTests):
     APP_TYPE = 'peewee'

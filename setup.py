@@ -19,7 +19,7 @@ from setuptools import setup
 
 setup(
     name='Flask-Social',
-    version='1.6.0',
+    version='1.6.2',
     url='https://github.com/mattupstate/flask-social',
     license='MIT',
     author='Matthew Wright',
@@ -34,7 +34,7 @@ setup(
     include_package_data=True,
     platforms='any',
     install_requires=[
-        'Flask-Security>=1.6.2',
+        'Flask-Security>=1.6.9',
         'Flask-OAuth>=0.12'
     ],
     test_suite='nose.collector',

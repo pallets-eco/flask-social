@@ -41,13 +41,13 @@ Then install your datastore requirement.
 
 **MongoEngine**::
 
-    $ pip install https://github.com/sbook/flask-mongoengine/tarball/master
+    $ pip install flask-mongoengine
 
 Then install your provider API libraries.
 
 **Facebook**::
 
-    $ pip install http://github.com/pythonforfacebook/facebook-sdk/tarball/master
+    $ pip install facebook-sdk
 
 **Twitter**::
 
@@ -111,7 +111,7 @@ to configure your application with your provider's application values
 
 **Google**::
 
-    SOCIAL_GOOGLE = {
+    app.config['SOCIAL_GOOGLE'] = {
         'consumer_key': 'xxxx',
         'consumer_secret': 'xxxx'
     }
@@ -127,7 +127,7 @@ index::
 
     # ... create the app ...
 
-    app.config['SECURITY_POST_LOGIN'] = '/profile'
+    app.config['SECURITY_POST_LOGIN_VIEW'] = '/profile'
 
     db = SQLAlchemy(app)
 
@@ -135,7 +135,8 @@ index::
 
     class Connection(db.Model):
         id = db.Column(db.Integer, primary_key=True)
-        user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+        user = db.relationship('user')
+        full_name = db.Column(db.String(255))
         provider_id = db.Column(db.String(255))
         provider_user_id = db.Column(db.String(255))
         access_token = db.Column(db.String(255))
@@ -148,6 +149,15 @@ index::
 
     Security(app, SQLAlchemyUserDatastore(db, User, Role))
     Social(app, SQLAlchemyConnectionDatastore(db, Connection))
+
+If you do not want the same OAuth account to be connected to more than one user account, 
+add the following to the Connection database model:
+
+    __table_args__ = (db.UniqueConstraint('provider_id', 'provider_user_id', name='_providerid_userid_uc'), {})
+
+This will ensure that every row in the Connection table has a unique provider_id and 
+provider_user_id pair. This means that any given Twitter account can only be connected 
+once.
 
 
 Connecting to Providers
@@ -168,15 +178,17 @@ add a mechanism on the profile page to do so. First the view method::
 
 You should notice the mechanism for retreiving the current user's connection
 with each service provider. If a connection is not found, the value will be
-`None`. Now lets take a look at the profile template::
+`None`. 
+
+Now lets take a look at the profile template::
 
     {% macro show_provider_button(provider_id, display_name, conn) %}
         {% if conn %}
-        <form action="{{ url_for('flask_social.remove_connection', provider_id=conn.provider_id, provider_user_id=conn.provider_user_id) }}" method="DELETE">
+        <form action="{{ url_for('social.remove_connection', provider_id=conn.provider_id, provider_user_id=conn.provider_user_id) }}?__METHOD_OVERRIDE__=DELETE" method="POST">
           <input type="submit" value="Disconnect {{ display_name }}" />
         </form>
         {% else %}
-        <form action="{{ url_for('flask_social.connect', provider_id=provider_id) }}" method="POST">
+        <form action="{{ url_for('social.connect', provider_id=provider_id) }}" method="POST">
           <input type="submit" value="Connect {{ display_name }}" />
         </form>
         {% endif %}
@@ -195,13 +207,41 @@ connect button will initiate the OAuth flow with the given provider, allowing
 the user to authorize the application and return a token and/or secret to be
 used when configuring an API instance.
 
+However, notice that the first form for removing social connections uses HTTP method
+tunneling, since HTML forms only support POST and GET. We tunnel by passing a query
+string parameter called __METHOD_OVERRIDE__ and set its value to DELETE. Ideally, we 
+can handle this via a piece of middleware::
+
+    from werkzeug import url_decode
+
+    # Taken from https://github.com/mattupstate/flask-social-example/blob/master/app/middleware.py
+    class MethodRewriteMiddleware(object):
+        ''' Middleware that will allow the passing of METHOD_OVERRIDE to a url
+        for HTTP verbs that cannot be done via <form>, like DELETE. '''
+        def __init__(self, app):
+            self.app = app
+
+        def __call__(self, environ, start_response):
+            if 'METHOD_OVERRIDE' in environ.get('QUERY_STRING', ''):
+                args = url_decode(environ['QUERY_STRING'])
+                method = args.get('__METHOD_OVERRIDE__')
+                if method:
+                    method = method.encode('ascii', 'replace')
+                    environ['REQUEST_METHOD'] = method
+            return self.app(environ, start_response)
+
+    app.wsgi_app = MethodRewriteMiddleware(app.wsgi_app)
+
+The middleware will now look for "METHOD_OVERRIDE" in the query string and if it's 
+found, update the REQUEST_METHOD environment variable.
+
 Logging In
 ----------
 
 If a user has a connection established to a service provider then it is possible
 for them to login via the provider. A login form would look like the following::
 
-    <form action="{{ url_for('flask_security.authenticate') }}" method="POST" name="login_form">
+    <form action="{{ url_for('security.authenticate') }}" method="POST" name="login_form">
       {{ form.hidden_tag() }}
       {{ form.username.label }} {{ form.username }}<br/>
       {{ form.password.label }} {{ form.password }}<br/>
@@ -210,7 +250,7 @@ for them to login via the provider. A login form would look like the following::
     </form>
 
     {% macro social_login(provider_id, display_name) %}
-      <form action="{{ url_for('flask_social.login', provider_id=provider_id) }}" method="POST">
+      <form action="{{ url_for('social.login', provider_id=provider_id) }}" method="POST">
         <input type="submit" value="Login with {{ display_name }}" />
       </form>
     {% endmacro %}
