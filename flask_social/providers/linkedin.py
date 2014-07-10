@@ -22,7 +22,8 @@ config = {
     }
 }
 
-selectors = 'id', 'first-name', 'last-name', 'email-address', 'site-standard-profile-request', 'picture-url'
+selectors = ('id', 'first-name', 'last-name', 'email-address',
+             'site-standard-profile-request', 'picture-url')
 
 
 def get_api(connection, **kwargs):
@@ -69,7 +70,6 @@ def get_connection_values(response, **kwargs):
         display_name=profile['firstName'],
         full_name = '%s %s' % (profile['firstName'], profile['lastName']),
         profile_url=profile_url,
-        image_url=image_url
+        image_url=image_url,
+        email=profile.get('emailAddress'),
     )
-
-

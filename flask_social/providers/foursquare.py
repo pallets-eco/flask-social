@@ -64,5 +64,6 @@ def get_connection_values(response, **kwargs):
         display_name=profile_url.split('/')[-1:][0],
         full_name = '%s %s' % (user['firstName'], user['lastName']),
         profile_url=profile_url,
-        image_url=image_url
+        image_url=image_url,
+        email=user.get('contact', {}).get('email', ''),
     )
