@@ -127,7 +127,7 @@ index::
 
     # ... create the app ...
 
-    app.config['SECURITY_POST_LOGIN'] = '/profile'
+    app.config['SECURITY_POST_LOGIN_VIEW'] = '/profile'
 
     db = SQLAlchemy(app)
 
@@ -136,6 +136,7 @@ index::
     class Connection(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         user = db.relationship('user')
+        full_name = db.Column(db.String(255))
         provider_id = db.Column(db.String(255))
         provider_user_id = db.Column(db.String(255))
         access_token = db.Column(db.String(255))
