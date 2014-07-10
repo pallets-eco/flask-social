@@ -22,7 +22,6 @@ config = {
     'request_token_url': None,
     'access_token_url': 'https://oauth.vk.com/access_token',
     'authorize_url': 'https://oauth.vk.com/authorize',
-    'request_token_params': {}
 }
 
 
@@ -42,7 +41,7 @@ def get_connection_values(response, **kwargs):
         return None
 
     access_token = response['access_token']
-    vk = vkontakte.API(token=response['access_token'])
+    vk = vkontakte.API(token=access_token)
     profile = vk.getProfiles(
         uids=response['user_id'],
         fields='first_name,last_name,photo_100,screen_name')[0]
@@ -57,5 +56,13 @@ def get_connection_values(response, **kwargs):
         display_name=profile.get('screen_name', fullname),
         full_name=fullname,
         profile_url=profile_url,
-        image_url=profile.get('photo_100')
+        image_url=profile.get('photo_100'),
+        email='',
+    )
+
+
+def get_token_pair_from_response(response):
+    return dict(
+        access_token=response.get('access_token', None),
+        secret=None,
     )
