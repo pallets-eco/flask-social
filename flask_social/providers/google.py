@@ -69,13 +69,15 @@ def get_connection_values(response, **kwargs):
     )
 
     profile = _get_api(credentials).userinfo().get().execute()
+    name_parts = profile['name']
+    
     return dict(
         provider_id=config['id'],
         provider_user_id=profile['id'],
         access_token=access_token,
         secret=None,
-        display_name=profile['name'],
-        full_name=profile['name'],
+        display_name= '%s %s' % (name_parts['givenName'], name_parts['familyName']),
+        full_name= '%s %s' % (name_parts['givenName'], name_parts['familyName']),
         profile_url=profile.get('link'),
         image_url=profile.get('picture'),
         email=profile.get('email'),
