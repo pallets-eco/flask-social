@@ -298,8 +298,6 @@ Configuration Values
   successfully authorizes a connection with a service provider.
 * :attr:`SOCIAL_CONNECT_DENY_REDIRECT`: The URL to redirect to when a user
   denies the connection request with a service provider.
-* :attr:`SOCIAL_FLASH_MESSAGES`: Specifies wether or not to flash messages
-  during connection and login requests.
 * :attr:`SOCIAL_POST_OAUTH_CONNECT_SESSION_KEY`: Specifies the session key to
   use when looking for a redirect value after a connection is made.
 * :attr:`SOCIAL_POST_OAUTH_LOGIN_SESSION_KEY`: Specifis the session key to use
