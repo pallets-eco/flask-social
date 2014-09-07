@@ -26,6 +26,7 @@ config = {
     'request_token_url': None,
     'access_token_method': 'POST',
     'request_token_params': {
+        'response_type': 'code',
         'scope': 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/plus.me'
         #add ' https://www.googleapis.com/auth/userinfo.email' to scope to also get email
     }
