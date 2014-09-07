@@ -25,6 +25,9 @@ config = {
     'access_token_url': 'https://accounts.google.com/o/oauth2/token',
     'request_token_url': None,
     'access_token_method': 'POST',
+    'access_token_params': {
+        'grant_type': 'authorization_code'
+    },
     'request_token_params': {
         'response_type': 'code',
         'scope': 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/plus.me'
