@@ -47,7 +47,7 @@ def get_connection_values(response, **kwargs):
     access_token = response['access_token']
     graph = facebook.GraphAPI(access_token)
     profile = graph.get_object("me")
-    profile_url = "http://facebook.com/profile.php?id=%s" % profile['id']
+    profile_url = "http://facebook.com/app_scoped_user_id/%s/" % profile['id']
     image_url = "http://graph.facebook.com/%s/picture" % profile['id']
 
     return dict(
