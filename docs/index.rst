@@ -294,9 +294,9 @@ Configuration Values
 * :attr:`SOCIAL_URL_PREFIX`: Specifies the URL prefix for the Social blueprint.
 * :attr:`SOCIAL_APP_URL`: The URL your application is registered under with a
   service provider.
-* :attr:`SOCIAL_CONNECT_ALLOW_REDIRECT`: The URL to redirect to after a user
+* :attr:`SOCIAL_CONNECT_ALLOW_VIEW`: The URL to redirect to after a user
   successfully authorizes a connection with a service provider.
-* :attr:`SOCIAL_CONNECT_DENY_REDIRECT`: The URL to redirect to when a user
+* :attr:`SOCIAL_CONNECT_DENY_VIEW`: The URL to redirect to when a user
   denies the connection request with a service provider.
 * :attr:`SOCIAL_FLASH_MESSAGES`: Specifies wether or not to flash messages
   during connection and login requests.
