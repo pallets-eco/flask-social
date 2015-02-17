@@ -44,13 +44,13 @@ class OAuthRemoteApp(BaseRemoteApp):
         self.id = id
         self.module = module
 
-    def get_connection(self):
+    def get_connection(self,user=current_user):
         return _social.datastore.find_connection(provider_id=self.id,
-                                                 user_id=current_user.id)
+                                                 user_id=user.id)
 
-    def get_api(self):
+    def get_api(self,user=current_user):
         module = import_module(self.module)
-        connection = self.get_connection()
+        connection = self.get_connection(user)
         if connection is None:
             return None
         return module.get_api(connection=connection,
