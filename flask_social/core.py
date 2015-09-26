@@ -103,7 +103,7 @@ class Social(object):
         self.datastore = datastore
 
         if app is not None and datastore is not None:
-            self._state = self.init_app(app, datastore)
+            self.init_app(app, datastore)
 
     def init_app(self, app, datastore=None):
         """Initialize the application with the Social extension
@@ -120,7 +120,7 @@ class Social(object):
         providers = dict()
 
         for key, config in app.config.items():
-            if not key.startswith('SOCIAL_') or config is None or key in default_config:
+            if not key.startswith('SOCIAL_') or key in default_config:
                 continue
 
             suffix = key.lower().replace('social_', '')
@@ -136,6 +136,11 @@ class Social(object):
 
         app.register_blueprint(create_blueprint(state, __name__))
         app.extensions['social'] = state
+
+        if self.datastore is None and datastore is not None:
+            self.datastore = datastore
+
+        self._state = state
 
         return state
 
