@@ -137,9 +137,6 @@ class Social(object):
         app.register_blueprint(create_blueprint(state, __name__))
         app.extensions['social'] = state
 
-        if self.app is None:
-            self.app = app
-
         if self.datastore is None and datastore is not None:
             self.datastore = datastore
 
