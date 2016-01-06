@@ -34,6 +34,7 @@ setup(
     include_package_data=True,
     platforms='any',
     install_requires=[
+        'future>=0.15.2',
         'Flask-Security>=1.6.9',
         'Flask-OAuthlib==0.5.0'
     ],
