@@ -12,8 +12,11 @@
 
 __version__ = '1.6.3.dev1'
 
+from future import standard_library
+standard_library.install_aliases()
+
 from .core import Social
 from .datastore import SQLAlchemyConnectionDatastore, \
-     MongoEngineConnectionDatastore, PeeweeConnectionDatastore
+    MongoEngineConnectionDatastore, PeeweeConnectionDatastore
 from .signals import connection_created, connection_failed, login_failed, \
-     connection_removed, login_completed
+    connection_removed, login_completed
