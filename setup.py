@@ -35,7 +35,7 @@ setup(
     platforms='any',
     install_requires=[
         'future>=0.15.2',
-        'Flask-Security>=1.6.9',
+        'Flask-Security>=1.7.5',
         'Flask-OAuthlib==0.5.0'
     ],
     test_suite='nose.collector',
