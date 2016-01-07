@@ -9,9 +9,9 @@ python:
 
 install:
   - pip install . --quiet --use-mirrors
-  - "if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install importlib --quiet --use-mirrors; fi"
   - pip install nose simplejson Flask-SQLAlchemy Flask-MongoEngine Flask-Peewee Flask-Mail mock --quiet --use-mirrors
-  - pip install oauth2client google-api-python-client foursquare python-twitter --quiet --use-mirrors
+  - pip install oauth2client google-api-python-client foursquare --quiet --use-mirrors
+  - pip install https://github.com/bear/python-twitter/archive/v3.0.zip
   - pip install http://github.com/pythonforfacebook/facebook-sdk/tarball/master --quiet
 
 before_script:
