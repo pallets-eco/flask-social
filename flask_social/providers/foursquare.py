@@ -12,7 +12,7 @@
 from __future__ import absolute_import
 
 import foursquare
-import urlparse
+from urllib.parse import urljoin
 
 config = {
     'id': 'foursquare',
@@ -47,8 +47,7 @@ def get_connection_values(response, **kwargs):
     api = foursquare.Foursquare(access_token=access_token)
     user = api.users()['user']
     profile_url = 'http://www.foursquare.com/user/' + user['id']
-    image_url = urlparse.urljoin(user['photo']['prefix'],
-                                 user['photo']['suffix'])
+    image_url = urljoin(user['photo']['prefix'], user['photo']['suffix'])
 
     return dict(
         provider_id=config['id'],
