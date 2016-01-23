@@ -3,12 +3,16 @@ language: python
 python:
   - "2.6"
   - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
 
 install:
-  - pip install . --quiet --use-mirrors
-  - "if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install importlib --quiet --use-mirrors; fi"
-  - pip install nose simplejson Flask-SQLAlchemy Flask-MongoEngine Flask-Peewee Flask-Mail mock --quiet --use-mirrors
-  - pip install oauth2client google-api-python-client foursquare python-twitter --quiet --use-mirrors
+  - pip install . --quiet
+  - pip install setuptools nose simplejson Flask-SQLAlchemy Flask-MongoEngine Flask-Peewee Flask-Mail mock --quiet
+  - pip install oauth2client google-api-python-client
+  - pip install https://pypi.python.org/packages/source/f/foursquare/foursquare-1!2015.5.26.tar.gz#md5=cf22b486e38dab5ad584521112e405b4
+  - pip install https://github.com/bear/python-twitter/archive/v3.0.zip
   - pip install http://github.com/pythonforfacebook/facebook-sdk/tarball/master --quiet
 
 before_script:

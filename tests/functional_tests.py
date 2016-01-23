@@ -81,7 +81,8 @@ class SocialTest(unittest.TestCase):
 
     def assertIn(self, member, container, msg=None):
         if hasattr(unittest.TestCase, 'assertIn'):
-            return unittest.TestCase.assertIn(self, member, container, msg)
+            # container from bytes -> str
+            return unittest.TestCase.assertIn(self, member, str(container), msg)
 
         return self.assertTrue(member in container)
 
