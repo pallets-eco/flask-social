@@ -4,6 +4,7 @@ from tests.test_app.sqlalchemy import create_app as create_sql_app
 from tests.test_app.mongoengine import create_app as create_mongo_app
 from tests.test_app.peewee_app import create_app as create_peewee_app
 
+
 def get_mock_twitter_response():
     return {
         'oauth_token_secret': 'the_oauth_token_secret',
@@ -26,17 +27,20 @@ def get_mock_twitter_connection_values():
         'image_url': 'https://cdn.twitter.com/something.png'
     }
 
+
 def get_mock_twitter_token_pair():
     return {
         'access_token': 'the_oauth_token',
         'secret': 'the_oauth_token_secret'
         }
 
+
 def get_mock_twitter_updated_token_pair():
     return {
         'access_token': 'the_updated_oauth_token',
         'secret': 'the_updated_oauth_token_secret'
         }
+
 
 class SocialTest(unittest.TestCase):
 
@@ -278,6 +282,7 @@ class TwitterSocialTests(SocialTest):
 
 class MongoEngineTwitterSocialTests(TwitterSocialTests):
     APP_TYPE = 'mongo'
+
 
 class PeeweeTwitterSocialTests(TwitterSocialTests):
     APP_TYPE = 'peewee'

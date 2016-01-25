@@ -8,10 +8,11 @@ sys.path.insert(0, os.getcwd())
 
 from flask.ext.security import Security, UserMixin, RoleMixin, \
      SQLAlchemyUserDatastore
-from flask.ext.social import Social, SQLAlchemyConnectionDatastore
+from flask.ext.social import SQLAlchemyConnectionDatastore
 from flask.ext.sqlalchemy import SQLAlchemy
 
-from tests.test_app import create_app as create_base_app, populate_data
+from tests.test_app import create_app as create_base_app, populate_data, \
+    social
 
 
 def create_app(config=None, debug=True):
@@ -53,14 +54,13 @@ def create_app(config=None, debug=True):
         rank = db.Column(db.Integer)
 
     app.security = Security(app, SQLAlchemyUserDatastore(db, User, Role))
-    app.social = Social(app, SQLAlchemyConnectionDatastore(db, Connection))
+    social.init_app(app, SQLAlchemyConnectionDatastore(db, Connection))
 
     @app.before_first_request
     def before_first_request():
         db.drop_all()
         db.create_all()
         populate_data()
-
 
     app.get_user = lambda: User.query.first()
     return app
