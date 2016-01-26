@@ -2,7 +2,12 @@
 
 from flask import Flask, render_template, current_app
 from flask.ext.security import login_required
+from flask.ext.social import Social
 from werkzeug import url_decode
+
+
+social = Social()
+
 
 class Config(object):
 
@@ -86,15 +91,15 @@ def create_app(config, debug=True):
     @app.route('/profile')
     @login_required
     def profile():
-        twitter = current_app.social.twitter
+        twitter = social.twitter
         twitter.get_api()
 
         return render_template(
             'profile.html',
             content='Profile Page',
             twitter_conn=twitter.get_connection(),
-            google_conn=current_app.social.google.get_connection(),
-            facebook_conn=current_app.social.facebook.get_connection(),
-            foursquare_conn=current_app.social.foursquare.get_connection())
+            google_conn=social.google.get_connection(),
+            facebook_conn=social.facebook.get_connection(),
+            foursquare_conn=social.foursquare.get_connection())
 
     return app
