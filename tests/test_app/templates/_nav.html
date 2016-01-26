@@ -1,11 +1,11 @@
-{%- if current_user.is_authenticated() -%}
+{%- if current_user.is_authenticated -%}
   <p>Hello {{ current_user.email }}</p>
 {%- endif %}
 <ul>
   <li><a href="{{ url_for('index') }}">Index</a></li>
   <li><a href="{{ url_for('profile') }}">Profile</a></li>
   <li>
-    {%- if current_user.is_authenticated() -%}
+    {%- if current_user.is_authenticated -%}
       <a href="{{ url_for('security.logout') }}">Log out</a>
     {%- else -%}
       <a href="{{ url_for('security.login') }}">Log in</a>

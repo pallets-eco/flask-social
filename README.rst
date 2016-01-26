@@ -23,3 +23,9 @@ Resources
 - `Development Version
   <http://github.com/mattupstate/flask-rq/zipball/develop#egg=Flask-Social-dev>`_
 - `Example Application <http://flask-social-example.herokuapp.com/>`_
+
+Developers info
+---------------
+
+- `Easy way for local testing is Tox <https://testrun.org/tox/latest/index.html>`_
+- `Tests required MongoDB avaliable on localhost <https://www.mongodb.org/>`_
