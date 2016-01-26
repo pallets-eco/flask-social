@@ -10,13 +10,20 @@
 """
 from importlib import import_module
 
-from flask import current_app
+from flask import current_app, _request_ctx_stack
+try:
+    from flask import _app_ctx_stack
+except ImportError:
+    _app_ctx_stack = None
 from flask_oauthlib.client import OAuthRemoteApp as BaseRemoteApp
 from flask.ext.security import current_user
 from werkzeug.local import LocalProxy
 
 from .utils import get_config, update_recursive
 from .views import create_blueprint
+
+# Select stack, in flask 0.9 _app_ctx_stack is used
+_ctx_stack = _app_ctx_stack or _request_ctx_stack
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
@@ -58,7 +65,7 @@ class OAuthRemoteApp(BaseRemoteApp):
                               consumer_secret=self.consumer_secret)
 
 
-def _get_state(app, datastore, providers, **kwargs):
+def create_state(app, datastore, providers, **kwargs):
     config = get_config(app)
 
     for key in providers.keys():
@@ -96,14 +103,23 @@ def _get_token():
     return None
 
 
+def get_state(app):
+    """Get social state of the app"""
+    # TODO check if right to use assert
+    assert 'social' in app.extensions, "The Social extension was not registered to the current application." \
+                                       "Please make sure to call init_app() first."
+    return app.extensions['social']
+
+
 class Social(object):
 
     def __init__(self, app=None, datastore=None):
+        self._state = None
         self.app = app
         self.datastore = datastore
 
         if app is not None and datastore is not None:
-            self._state = self.init_app(app, datastore)
+            self.init_app(app, datastore)
 
     def init_app(self, app, datastore=None):
         """Initialize the application with the Social extension
@@ -132,12 +148,15 @@ class Social(object):
             providers[config['id']] = OAuthRemoteApp(**config)
             providers[config['id']].tokengetter(_get_token)
 
-        state = _get_state(app, datastore, providers)
+        self._state = create_state(app, datastore, providers)
 
-        app.register_blueprint(create_blueprint(state, __name__))
-        app.extensions['social'] = state
-
-        return state
+        app.register_blueprint(create_blueprint(self._state, __name__))
+        app.extensions['social'] = self._state
 
     def __getattr__(self, name):
-        return getattr(self._state, name, None)
+        if self._state is not None:  # shortcut
+            return getattr(self._state, name, None)
+        ctx = _ctx_stack.top
+        if ctx is not None:
+            self._state = get_state(ctx.app)
+            return getattr(self._state, name)
