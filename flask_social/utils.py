@@ -68,7 +68,11 @@ def get_config(app):
 
 
 def update_recursive(d, u):
-    for k, v in u.iteritems():
+    try:
+        items = u.iteritems
+    except AttributeError:
+        items = u.items
+    for k, v in items():
         if isinstance(v, collections.Mapping):
             r = update_recursive(d.get(k, {}), v)
             d[k] = r
