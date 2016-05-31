@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    flask.ext.social.providers.vk
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    flask_social.providers.vk
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
     This module contains the Flask-Social vkontakte code
 

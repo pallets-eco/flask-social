@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    flask.ext.social.views
-    ~~~~~~~~~~~~~~~~~~~~~~
+    flask_social.views
+    ~~~~~~~~~~~~~~~~~~
 
     This module contains the Flask-Social views
 

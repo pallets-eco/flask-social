@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    flask.ext.social.core
-    ~~~~~~~~~~~~~~~~~~~~~
+    flask_social.core
+    ~~~~~~~~~~~~~~~~~
 
     This module contains the Flask-Social core
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-    flask.ext.social.signals
-    ~~~~~~~~~~~~~~~~~~~~~~~~
+    flask_social.signals
+    ~~~~~~~~~~~~~~~~~~~~
 
     This module contains the Flask-Social signals
 

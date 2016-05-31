@@ -122,8 +122,8 @@ hypothetical profile page instead of Flask-Security's default of the root
 index::
 
     # ... other required imports ...
-    from flask.ext.social import Social
-    from flask.ext.social.datastore import SQLAlchemyConnectionDatastore
+    from flask_social import Social
+    from flask_social.datastore import SQLAlchemyConnectionDatastore
 
     # ... create the app ...
 
