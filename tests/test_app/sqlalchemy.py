@@ -6,10 +6,10 @@ import os
 sys.path.pop(0)
 sys.path.insert(0, os.getcwd())
 
-from flask.ext.security import Security, UserMixin, RoleMixin, \
+from flask_security import Security, UserMixin, RoleMixin, \
      SQLAlchemyUserDatastore
-from flask.ext.social import Social, SQLAlchemyConnectionDatastore
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_social import Social, SQLAlchemyConnectionDatastore
+from flask_sqlalchemy import SQLAlchemy
 
 from tests.test_app import create_app as create_base_app, populate_data
 

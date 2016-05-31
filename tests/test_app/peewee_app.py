@@ -7,9 +7,9 @@ sys.path.pop(0)
 sys.path.insert(0, os.getcwd())
 
 from flask_peewee.db import Database
-from flask.ext.security import Security, UserMixin, RoleMixin, \
+from flask_security import Security, UserMixin, RoleMixin, \
     PeeweeUserDatastore
-from flask.ext.social import Social, PeeweeConnectionDatastore
+from flask_social import Social, PeeweeConnectionDatastore
 from peewee import *
 
 from tests.test_app import create_app as create_base_app, populate_data

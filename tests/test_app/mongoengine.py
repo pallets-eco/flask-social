@@ -6,10 +6,10 @@ import os
 sys.path.pop(0)
 sys.path.insert(0, os.getcwd())
 
-from flask.ext.mongoengine import MongoEngine
-from flask.ext.security import Security, UserMixin, RoleMixin, \
+from flask_mongoengine import MongoEngine
+from flask_security import Security, UserMixin, RoleMixin, \
      MongoEngineUserDatastore
-from flask.ext.social import Social, MongoEngineConnectionDatastore
+from flask_social import Social, MongoEngineConnectionDatastore
 
 from tests.test_app import create_app as create_base_app, populate_data
 

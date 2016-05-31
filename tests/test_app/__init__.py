@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from flask import Flask, render_template, current_app
-from flask.ext.security import login_required
+from flask_security import login_required
 from werkzeug import url_decode
 
 class Config(object):
