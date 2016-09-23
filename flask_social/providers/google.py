@@ -27,9 +27,11 @@ config = {
     'access_token_method': 'POST',
     'request_token_params': {
         'scope': 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/plus.me'
-        #add ' https://www.googleapis.com/auth/userinfo.email' to scope to also get email
+        # add ' https://www.googleapis.com/auth/userinfo.email' to scope to
+        # also get email
     }
 }
+
 
 def _get_api(credentials):
     http = httplib2.Http()
@@ -69,13 +71,15 @@ def get_connection_values(response, **kwargs):
     )
 
     profile = _get_api(credentials).userinfo().get().execute()
+    full_name = ' '.join(
+        (profile['name']['givenName'], profile['name']['familyName']))
     return dict(
         provider_id=config['id'],
         provider_user_id=profile['id'],
         access_token=access_token,
         secret=None,
-        display_name=profile['name'],
-        full_name=profile['name'],
+        display_name=profile['displayName'],
+        full_name=full_name,
         profile_url=profile.get('link'),
         image_url=profile.get('picture'),
         email=profile.get('email'),
