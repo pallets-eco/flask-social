@@ -112,7 +112,8 @@ class Social(object):
         :param datastore: Connection datastore instance
         """
 
-        datastore = datastore or self.datastore
+        self.app = app or self.app
+        self.datastore = datastore = datastore or self.datastore
 
         for key, value in default_config.items():
             app.config.setdefault(key, value)
