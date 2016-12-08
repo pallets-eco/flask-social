@@ -103,7 +103,7 @@ class Social(object):
         self.datastore = datastore
 
         if app is not None and datastore is not None:
-            self._state = self.init_app(app, datastore)
+            self.init_app(app, datastore)
 
     def init_app(self, app, datastore=None):
         """Initialize the application with the Social extension
@@ -137,7 +137,7 @@ class Social(object):
         app.register_blueprint(create_blueprint(state, __name__))
         app.extensions['social'] = state
 
-        return state
+        self.state = state
 
     def __getattr__(self, name):
-        return getattr(self._state, name, None)
+        return getattr(self.state, name, None)
