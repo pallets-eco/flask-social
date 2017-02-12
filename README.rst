@@ -3,12 +3,12 @@ Flask-Social
 
 :Master:
 
-    .. image:: https://secure.travis-ci.org/mattupstate/flask-social.png?branch=master
+    .. image:: https://secure.travis-ci.org/mattupstate/flask-social.svg?branch=master
        :target: https://secure.travis-ci.org/mattupstate/flask-social?branch=master
 
 :Develop:
 
-    .. image:: https://secure.travis-ci.org/mattupstate/flask-social.png?branch=develop
+    .. image:: https://secure.travis-ci.org/mattupstate/flask-social.svg?branch=develop
        :target: https://secure.travis-ci.org/mattupstate/flask-social?branch=develop
 
 Oauth provider login and APIs for use with
