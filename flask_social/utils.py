@@ -8,6 +8,7 @@
     :copyright: (c) 2012 by Matt Wright.
     :license: MIT, see LICENSE for more details.
 """
+import six
 import collections
 
 from importlib import import_module
@@ -68,7 +69,7 @@ def get_config(app):
 
 
 def update_recursive(d, u):
-    for k, v in u.iteritems():
+    for k, v in six.iteritems(u):
         if isinstance(v, collections.Mapping):
             r = update_recursive(d.get(k, {}), v)
             d[k] = r
