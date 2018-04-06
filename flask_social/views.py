@@ -12,10 +12,10 @@ from importlib import import_module
 
 from flask import (Blueprint, current_app, redirect, request, session,
                    after_this_request, abort, url_for)
-from flask.ext.security import current_user, login_required
-from flask.ext.security.utils import (get_post_login_redirect, login_user,
+from flask_security import current_user, login_required
+from flask_security.utils import (get_post_login_redirect, login_user,
                                       logout_user, get_url, do_flash)
-from flask.ext.security.decorators import anonymous_user_required
+from flask_security.decorators import anonymous_user_required
 from werkzeug.local import LocalProxy
 
 from .signals import (connection_removed, connection_created,
